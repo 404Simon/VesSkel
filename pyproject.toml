@@ -9,3 +9,19 @@ dependencies = [
     "pillow>=12.2.0",
     "scipy>=1.17.1",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-xdist>=3.8.0",
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["vesskel*"]
+
+[tool.pytest.ini_options]
+addopts = "-n auto"

@@ -22,3 +22,7 @@ Binary gold standard vessel segmentation images and field of view (FOV) masks ar
 The HRF dataset is released under the **Creative Commons 4.0 Attribution License**.
 
 For more information, visit the [HRF Image Database](https://www5.cs.fau.de/research/data/fundus-images/).
+
+## Regression Tests
+
+Run the regression tests via `uv run pytest` to verify the output of the thinning has not changed across all 45 HRF samples. On the first run (or with `--update-baseline`), baselines are generated and saved to `tests/skeletons/`. Subsequent runs regenerate skeletons and compare them against the saved baselines.
