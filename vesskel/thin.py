@@ -21,333 +21,115 @@ References
 
 import numpy as np
 
+# 8-neighbor offsets (row, col)
+_NEIGHBORS = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
 
-def _pad_2d_to_3d(img_2d):
-    """Embed a 2D binary image into a padded 3D array (3, H+2, W+2)."""
-    h, w = img_2d.shape
-    vol = np.zeros((3, h + 2, w + 2), dtype=np.uint8)
-    vol[1, 1:-1, 1:-1] = img_2d
-    return vol
+# 4-neighbor offsets for border detection
+_BORDERS = [(-1, 0), (1, 0), (0, 1), (0, -1)]  # N, S, E, W
 
 
-def _get_neighborhood(vol, p, r, c):
-    """Return the 27-neighborhood as a flat array."""
-    n = np.empty(27, dtype=np.uint8)
-    idx = 0
-    for dp in (-1, 0, 1):
-        for dr in (-1, 0, 1):
-            for dc in (-1, 0, 1):
-                n[idx] = vol[p + dp, r + dr, c + dc]
-                idx += 1
-    return n
-
-
-def _is_endpoint(neighbors):
-    """Endpoint has exactly 1 foreground neighbor (+ itself = 2)."""
-    return np.sum(neighbors) == 2
-
-
-# Euler LUT from Lee94 Table 2, column δG_26
-_EULER_LUT = np.zeros(256, dtype=np.int32)
-_arr = [
-    1,
-    -1,
-    -1,
-    1,
-    -3,
-    -1,
-    -1,
-    1,
-    -1,
-    1,
-    1,
-    -1,
-    3,
-    1,
-    1,
-    -1,
-    -3,
-    -1,
-    3,
-    1,
-    1,
-    -1,
-    3,
-    1,
-    -1,
-    1,
-    1,
-    -1,
-    3,
-    1,
-    1,
-    -1,
-    -3,
-    3,
-    -1,
-    1,
-    1,
-    3,
-    -1,
-    1,
-    -1,
-    1,
-    1,
-    -1,
-    3,
-    1,
-    1,
-    -1,
-    1,
-    3,
-    3,
-    1,
-    5,
-    3,
-    3,
-    1,
-    -1,
-    1,
-    1,
-    -1,
-    3,
-    1,
-    1,
-    -1,
-    -7,
-    -1,
-    -1,
-    1,
-    -3,
-    -1,
-    -1,
-    1,
-    -1,
-    1,
-    1,
-    -1,
-    3,
-    1,
-    1,
-    -1,
-    -3,
-    -1,
-    3,
-    1,
-    1,
-    -1,
-    3,
-    1,
-    -1,
-    1,
-    1,
-    -1,
-    3,
-    1,
-    1,
-    -1,
-    -3,
-    3,
-    -1,
-    1,
-    1,
-    3,
-    -1,
-    1,
-    -1,
-    1,
-    1,
-    -1,
-    3,
-    1,
-    1,
-    -1,
-    1,
-    3,
-    3,
-    1,
-    5,
-    3,
-    3,
-    1,
-    -1,
-    1,
-    1,
-    -1,
-    3,
-    1,
-    1,
-    -1,
-]
-_EULER_LUT[1::2] = _arr
-
-# Octant index tables for euler characteristic
-_OCTANT_INDICES = [
-    [2, 1, 11, 10, 5, 4, 14],  # NEB
-    [0, 9, 3, 12, 1, 10, 4],  # NWB
-    [8, 7, 17, 16, 5, 4, 14],  # SEB
-    [6, 15, 7, 16, 3, 12, 4],  # SWB
-    [20, 23, 19, 22, 11, 14, 10],  # NEU
-    [18, 21, 9, 12, 19, 22, 10],  # NWU
-    [26, 23, 17, 14, 25, 22, 16],  # SEU
-    [24, 25, 15, 16, 21, 22, 12],  # SWU
-]
-
-
-def _is_euler_invariant(neighbors):
-    """Check Euler characteristic preservation across all 8 octants."""
-    euler_sum = 0
-    for octant in range(8):
-        n = 1
-        for j, idx in enumerate(_OCTANT_INDICES[octant]):
-            if neighbors[idx] == 1:
-                n |= 1 << (7 - j)
-        euler_sum += _EULER_LUT[n]
-    return euler_sum == 0
-
-
-# Octree structure for simple point labeling
-#   Each entry corresponds to one of the 8 octants and contains:
-#     - list of 7 neighbor indices within that octant
-#     - list of 7 sub-octant indices to recurse into for connectivity
-_OCTREE = [
-    ([0, 1, 3, 4, 9, 10, 12], [[], [2], [3], [2, 3, 4], [5], [2, 5, 6], [3, 5, 7]]),
-    ([1, 4, 10, 2, 5, 11, 13], [[1], [1, 3, 4], [1, 5, 6], [], [4], [6], [4, 6, 8]]),
-    ([3, 4, 12, 6, 7, 14, 15], [[1], [1, 2, 4], [1, 5, 7], [], [4], [7], [4, 7, 8]]),
-    ([4, 5, 13, 7, 15, 8, 16], [[1, 2, 3], [2], [2, 6, 8], [3], [3, 7, 8], [], [8]]),
-    ([9, 10, 12, 17, 18, 20, 21], [[1], [1, 2, 6], [1, 3, 7], [], [6], [7], [6, 7, 8]]),
-    (
-        [10, 11, 13, 18, 21, 19, 22],
-        [[1, 2, 5], [2], [2, 4, 8], [5], [5, 7, 8], [], [8]],
-    ),
-    (
-        [12, 14, 15, 20, 21, 23, 24],
-        [[1, 3, 5], [3], [3, 4, 8], [5], [5, 6, 8], [], [8]],
-    ),
-    (
-        [13, 15, 16, 21, 22, 24, 25],
-        [[2, 4, 6], [3, 4, 7], [4], [5, 6, 7], [6], [7], []],
-    ),
-]
-
-# Maps each neighbor to the octant where it serves as the starting point for connectivity labeling.
-_OCTANT_START = {
-    0: 1,
-    1: 1,
-    2: 2,
-    3: 1,
-    4: 1,
-    5: 2,
-    6: 3,
-    7: 3,
-    8: 4,
-    9: 1,
-    10: 1,
-    11: 2,
-    12: 1,
-    13: 2,
-    14: 3,
-    15: 3,
-    16: 4,
-    17: 5,
-    18: 5,
-    19: 6,
-    20: 5,
-    21: 5,
-    22: 6,
-    23: 7,
-    24: 7,
-    25: 8,
-}
-
-
-def _octree_labeling(octant, label, cube):
-    """Recursively label connected components in the 26-neighborhood."""
-    indices, adj_octants = _OCTREE[octant - 1]
-    for i, idx in enumerate(indices):
-        if cube[idx] == 1:
-            cube[idx] = label
-            for new_oct in adj_octants[i]:
-                _octree_labeling(new_oct, label, cube)
-
-
-def _is_simple_point(neighbors):
-    """Check if removing the center point preserves connectivity."""
-    cube = np.concatenate([neighbors[:13], neighbors[14:]])  # skip center
-    label = 2
-    for i in range(26):
-        if cube[i] == 1:
-            _octree_labeling(_OCTANT_START[i], label, cube)
-            label += 1
-            if label - 2 >= 2:
+def _is_endpoint(img, r, c):
+    """Check if point is an endpoint (exactly 1 foreground neighbor)."""
+    count = 0
+    for dr, dc in _NEIGHBORS:
+        if img[r + dr, c + dc] == 1:
+            count += 1
+            if count > 1:
                 return False
     return True
 
 
-def _is_border_point(vol, p, r, c, border):
-    """Check if point is on the specified border."""
-    if border == 1:
-        return vol[p, r, c - 1] == 0  # N
-    if border == 2:
-        return vol[p, r, c + 1] == 0  # S
-    if border == 3:
-        return vol[p, r + 1, c] == 0  # E
-    if border == 4:
-        return vol[p, r - 1, c] == 0  # W
-    if border == 5:
-        return vol[p + 1, r, c] == 0  # U
-    if border == 6:
-        return vol[p - 1, r, c] == 0  # B
-    return False
+def _count_8connected_components(img, r, c):
+    """Count 8-connected components among the 8-neighbors of (r, c).
+
+    Computed via flood-fill DFS over the 8-neighbor foreground pixels.
+    """
+    neighbors = []
+    for dr, dc in _NEIGHBORS:
+        if img[r + dr, c + dc] == 1:
+            neighbors.append((r + dr, c + dc))
+
+    if not neighbors:
+        return 0
+
+    neighbor_set = set(neighbors)
+    visited = set()
+    components = 0
+
+    for start in neighbors:
+        if start in visited:
+            continue
+        components += 1
+        stack = [start]
+        visited.add(start)
+        while stack:
+            cr, cc = stack.pop()
+            for dr, dc in _NEIGHBORS:
+                nr, nc = cr + dr, cc + dc
+                if (nr, nc) in neighbor_set and (nr, nc) not in visited:
+                    visited.add((nr, nc))
+                    stack.append((nr, nc))
+
+    return components
 
 
-def lee94_thin(img_2d):
+def _is_simple_point(img, r, c):
+    """Check if removing the point preserves connectivity.
+
+    A point is simple if its 8-neighbors form exactly one 8-connected component.
+    """
+    return _count_8connected_components(img, r, c) == 1
+
+
+def lee94_thin(img):
     """Lee94 thinning algorithm for a 2D binary image.
 
     Parameters
     ----------
-    img_2d : ndarray
+    img : ndarray
         2D binary image (0=background, 1=foreground).
 
     Returns
     -------
     ndarray
-        Thinned binary image with the same shape as img_2d.
+        Thinned binary image with the same shape as img.
     """
-    vol = _pad_2d_to_3d(img_2d)
-    borders = [4, 3, 2, 1]  # 2D: only W, E, S, N
-    num_borders = 4
+    img = img.astype(np.uint8).copy()
+    h, w = img.shape
 
-    unchanged = 0
-    while unchanged < num_borders:
-        unchanged = 0
-        for border in borders:
+    padded = np.zeros((h + 2, w + 2), dtype=np.uint8)
+    padded[1:-1, 1:-1] = img
+
+    while True:
+        total_removed = 0
+
+        for border_idx in range(4):
+            br, bc = _BORDERS[border_idx]
+
             # Step 1: collect candidates
             candidates = []
-            for r in range(1, vol.shape[1] - 1):
-                for c in range(1, vol.shape[2] - 1):
-                    if vol[1, r, c] != 1:
+            for r in range(1, h + 1):
+                for c in range(1, w + 1):
+                    if padded[r, c] != 1:
                         continue
-                    if not _is_border_point(vol, 1, r, c, border):
+                    # Check if point is on the current border direction
+                    if padded[r + br, c + bc] != 0:
                         continue
-                    nb = _get_neighborhood(vol, 1, r, c)
-                    if _is_endpoint(nb):
+                    if _is_endpoint(padded, r, c):
                         continue
-                    if not _is_euler_invariant(nb):
+                    if not _is_simple_point(padded, r, c):
                         continue
-                    if not _is_simple_point(nb):
-                        continue
-                    candidates.append((1, r, c))
+                    candidates.append((r, c))
 
             # Step 2: sequential rechecking
-            changed = False
-            for p, r, c in candidates:
-                nb = _get_neighborhood(vol, p, r, c)
-                if _is_simple_point(nb):
-                    vol[p, r, c] = 0
-                    changed = True
+            for r, c in candidates:
+                if padded[r, c] != 1:
+                    continue
+                if _is_simple_point(padded, r, c):
+                    padded[r, c] = 0
+                    total_removed += 1
 
-            if not changed:
-                unchanged += 1
+        if total_removed == 0:
+            break
 
-    return vol[1, 1:-1, 1:-1].copy()
+    return padded[1:-1, 1:-1].copy()
