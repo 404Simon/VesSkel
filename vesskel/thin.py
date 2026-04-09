@@ -1,7 +1,7 @@
 """Lee94 thinning algorithm for 2D binary images.
 
-This is a pure-Python (unoptimized) implementation of the thinning
-algorithm from [Lee94], closely based on the scikit-image Cython
+This is a 2D numba-parallelized pure-Python implementation of the
+thinning algorithm from [Lee94], based on the scikit-image Cython
 implementation in `skimage.morphology._skeletonize_lee_cy` (`_compute_thin_image`)
 [SKIMAGE], which itself is a port of the Skeletonize3D ImageJ plugin by
 Ignacio Arganda-Carreras [IAC15].
@@ -20,14 +20,16 @@ References
 """
 
 import numpy as np
+from numba import njit, prange
 
 # 8-neighbor offsets (row, col)
-_NEIGHBORS = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
+_NEIGHBORS = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))
 
 # 4-neighbor offsets for border detection
-_BORDERS = [(-1, 0), (1, 0), (0, 1), (0, -1)]  # N, S, E, W
+_BORDERS = ((-1, 0), (1, 0), (0, 1), (0, -1))  # N, S, E, W
 
 
+@njit(cache=True)
 def _is_endpoint(img, r, c):
     """Check if point is an endpoint (exactly 1 foreground neighbor)."""
     count = 0
@@ -39,40 +41,57 @@ def _is_endpoint(img, r, c):
     return True
 
 
+@njit(cache=True)
 def _count_8connected_components(img, r, c):
     """Count 8-connected components among the 8-neighbors of (r, c).
 
     Computed via flood-fill DFS over the 8-neighbor foreground pixels.
+    Uses fixed-size arrays instead of Python sets for numba compatibility.
     """
-    neighbors = []
-    for dr, dc in _NEIGHBORS:
-        if img[r + dr, c + dc] == 1:
-            neighbors.append((r + dr, c + dc))
+    nr_arr = np.empty(8, dtype=np.int64)
+    nc_arr = np.empty(8, dtype=np.int64)
+    is_fg = np.zeros(8, dtype=np.bool_)
+    n = 0
 
-    if not neighbors:
+    for i in range(8):
+        dr, dc = _NEIGHBORS[i]
+        if img[r + dr, c + dc] == 1:
+            nr_arr[n] = r + dr
+            nc_arr[n] = c + dc
+            is_fg[n] = True
+            n += 1
+
+    if n == 0:
         return 0
 
-    neighbor_set = set(neighbors)
-    visited = set()
+    visited = np.zeros(8, dtype=np.bool_)
+    stack = np.empty(8, dtype=np.int64)
     components = 0
 
-    for start in neighbors:
-        if start in visited:
+    for start in range(n):
+        if visited[start] or not is_fg[start]:
             continue
         components += 1
-        stack = [start]
-        visited.add(start)
-        while stack:
-            cr, cc = stack.pop()
-            for dr, dc in _NEIGHBORS:
-                nr, nc = cr + dr, cc + dc
-                if (nr, nc) in neighbor_set and (nr, nc) not in visited:
-                    visited.add((nr, nc))
-                    stack.append((nr, nc))
+        sp = 0
+        stack[sp] = start
+        sp += 1
+        visited[start] = True
+        while sp > 0:
+            sp -= 1
+            ci = stack[sp]
+            cr, cc = nr_arr[ci], nc_arr[ci]
+            for ni in range(n):
+                if not is_fg[ni] or visited[ni]:
+                    continue
+                if abs(nr_arr[ni] - cr) <= 1 and abs(nc_arr[ni] - cc) <= 1:
+                    visited[ni] = True
+                    stack[sp] = ni
+                    sp += 1
 
     return components
 
 
+@njit(cache=True)
 def _is_simple_point(img, r, c):
     """Check if removing the point preserves connectivity.
 
@@ -81,6 +100,7 @@ def _is_simple_point(img, r, c):
     return _count_8connected_components(img, r, c) == 1
 
 
+@njit(parallel=True, cache=True)
 def lee94_thin(img):
     """Lee94 thinning algorithm for a 2D binary image.
 
@@ -100,29 +120,47 @@ def lee94_thin(img):
     padded = np.zeros((h + 2, w + 2), dtype=np.uint8)
     padded[1:-1, 1:-1] = img
 
+    # Per-row candidate storage for parallel collection
+    row_candidates = np.empty((h, w, 2), dtype=np.int64)
+    row_counts = np.zeros(h, dtype=np.int64)
+    # Flattened candidates for sequential recheck
+    candidates = np.empty((h * w, 2), dtype=np.int64)
+
     while True:
         total_removed = 0
 
         for border_idx in range(4):
             br, bc = _BORDERS[border_idx]
 
-            # Step 1: collect candidates
-            candidates = []
-            for r in range(1, h + 1):
+            # Step 1: collect candidates in parallel (per-row)
+            row_counts[:] = 0
+            for r in prange(1, h + 1):
                 for c in range(1, w + 1):
                     if padded[r, c] != 1:
                         continue
-                    # Check if point is on the current border direction
                     if padded[r + br, c + bc] != 0:
                         continue
                     if _is_endpoint(padded, r, c):
                         continue
                     if not _is_simple_point(padded, r, c):
                         continue
-                    candidates.append((r, c))
+                    idx = row_counts[r - 1]
+                    row_candidates[r - 1, idx, 0] = r
+                    row_candidates[r - 1, idx, 1] = c
+                    row_counts[r - 1] = idx + 1
 
-            # Step 2: sequential rechecking
-            for r, c in candidates:
+            # Merge per-row results into flat candidates array
+            count = 0
+            for r in range(h):
+                for i in range(row_counts[r]):
+                    candidates[count, 0] = row_candidates[r, i, 0]
+                    candidates[count, 1] = row_candidates[r, i, 1]
+                    count += 1
+
+            # Step 2: sequential rechecking (data dependency - cannot parallelize)
+            for i in range(count):
+                r = candidates[i, 0]
+                c = candidates[i, 1]
                 if padded[r, c] != 1:
                     continue
                 if _is_simple_point(padded, r, c):
