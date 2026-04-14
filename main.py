@@ -1,3 +1,4 @@
+from vesskel.features import extract_vessel_features
 from vesskel.hrf import HRFDataset, preprocess_segmentation
 from vesskel.thin import lee94_thin
 
@@ -16,6 +17,11 @@ def main():
 
     skeleton = lee94_thin(cleaned)
     print(f"Skeleton pixels: {skeleton.sum()}")
+
+    features = extract_vessel_features(skeleton)
+    print("Extracted vessel features:")
+    for key, value in features.items():
+        print(f"  {key}: {value:.6f}")
 
 
 if __name__ == "__main__":
