@@ -1,0 +1,15 @@
+feature,value
+max_degree,6
+max_length,76.656854249492383
+mean_degree,2.0071588909785838
+mean_length,2.1862829437923028
+mean_tortuosity,1.1398778619264256
+min_length,1
+num_bifurcations,7815
+num_components,1
+num_edges,16542
+num_endpoints,8668
+num_nodes,16483
+std_length,2.3280019011898943
+std_tortuosity,0.33783987258842835
+total_length,36165.492456212276
