@@ -20,7 +20,7 @@ References
 """
 
 import numpy as np
-from numba import njit
+from numba import njit, prange
 
 _EULER_ARR = np.array(
     [
@@ -218,6 +218,29 @@ for _i in range(26):
         if abs(dp) <= 1 and abs(dr) <= 1 and abs(dc) <= 1:
             _ADJ26[_i, _j] = 1
 
+_ADJ26_LIST = np.full((26, 26), -1, dtype=np.int8)
+_ADJ26_COUNT = np.zeros(26, dtype=np.uint8)
+for _i in range(26):
+    _count = 0
+    for _j in range(26):
+        if _ADJ26[_i, _j] == 1:
+            _ADJ26_LIST[_i, _count] = _j
+            _count += 1
+    _ADJ26_COUNT[_i] = _count
+
+_BORDER_OFFSETS = np.array(
+    [
+        (0, 0, 0),
+        (0, 0, -1),
+        (0, 0, 1),
+        (0, 1, 0),
+        (0, -1, 0),
+        (1, 0, 0),
+        (-1, 0, 0),
+    ],
+    dtype=np.int8,
+)
+
 
 @njit(cache=True)
 def _get_neighborhood(img, p, r, c, neighborhood):
@@ -280,13 +303,13 @@ def _is_simple_point(neighbors):
         while sp > 0:
             sp -= 1
             cur = stack[sp]
-            for nxt in range(26):
+            for k in range(_ADJ26_COUNT[cur]):
+                nxt = _ADJ26_LIST[cur, k]
                 if cube[nxt] != 1 or visited[nxt] == 1:
                     continue
-                if _ADJ26[cur, nxt] == 1:
-                    visited[nxt] = 1
-                    stack[sp] = nxt
-                    sp += 1
+                visited[nxt] = 1
+                stack[sp] = nxt
+                sp += 1
 
     return True
 
@@ -294,32 +317,16 @@ def _is_simple_point(neighbors):
 @njit(cache=True)
 def _find_simple_point_candidates(img, curr_border, candidates):
     count = 0
-    neighborhood = np.empty(27, dtype=np.uint8)
+    dp = int(_BORDER_OFFSETS[curr_border, 0])
+    dr = int(_BORDER_OFFSETS[curr_border, 1])
+    dc = int(_BORDER_OFFSETS[curr_border, 2])
 
     for p in range(1, img.shape[0] - 1):
         for r in range(1, img.shape[1] - 1):
             for c in range(1, img.shape[2] - 1):
                 if img[p, r, c] != 1:
                     continue
-
-                is_border_pt = (
-                    (curr_border == 1 and img[p, r, c - 1] == 0)
-                    or (curr_border == 2 and img[p, r, c + 1] == 0)
-                    or (curr_border == 3 and img[p, r + 1, c] == 0)
-                    or (curr_border == 4 and img[p, r - 1, c] == 0)
-                    or (curr_border == 5 and img[p + 1, r, c] == 0)
-                    or (curr_border == 6 and img[p - 1, r, c] == 0)
-                )
-                if not is_border_pt:
-                    continue
-
-                _get_neighborhood(img, p, r, c, neighborhood)
-
-                if _is_endpoint(neighborhood):
-                    continue
-                if not _is_euler_invariant(neighborhood):
-                    continue
-                if not _is_simple_point(neighborhood):
+                if img[p + dp, r + dr, c + dc] != 0:
                     continue
 
                 candidates[count, 0] = p
@@ -330,16 +337,50 @@ def _find_simple_point_candidates(img, curr_border, candidates):
     return count
 
 
+@njit(cache=True, parallel=True)
+def _mark_removable_candidates(img, candidates, num_candidates, removable):
+    for i in prange(num_candidates):
+        p = candidates[i, 0]
+        r = candidates[i, 1]
+        c = candidates[i, 2]
+
+        neighborhood = np.empty(27, dtype=np.uint8)
+        _get_neighborhood(img, p, r, c, neighborhood)
+
+        can_remove = (
+            (not _is_endpoint(neighborhood))
+            and _is_euler_invariant(neighborhood)
+            and _is_simple_point(neighborhood)
+        )
+        removable[i] = 1 if can_remove else 0
+
+
+@njit(cache=True)
+def _apply_removals(img, candidates, num_candidates, removable):
+    removed = 0
+    neighborhood = np.empty(27, dtype=np.uint8)
+    for i in range(num_candidates):
+        if removable[i] == 0:
+            continue
+        p = candidates[i, 0]
+        r = candidates[i, 1]
+        c = candidates[i, 2]
+        if img[p, r, c] != 1:
+            continue
+        _get_neighborhood(img, p, r, c, neighborhood)
+        if _is_simple_point(neighborhood):
+            img[p, r, c] = 0
+            removed += 1
+    return removed
+
+
 @njit(cache=True)
 def _compute_thin_image(img):
+    num_borders = 6
     unchanged_borders = 0
-    if img.shape[0] == 3:
-        num_borders = 4
-    else:
-        num_borders = 6
 
-    candidates = np.empty((img.size, 3), dtype=np.int64)
-    neighborhood = np.empty(27, dtype=np.uint8)
+    candidates = np.empty((img.size, 3), dtype=np.int32)
+    removable = np.empty(img.size, dtype=np.uint8)
 
     while unchanged_borders < num_borders:
         unchanged_borders = 0
@@ -347,19 +388,14 @@ def _compute_thin_image(img):
             curr_border = _BORDERS[j]
             num_candidates = _find_simple_point_candidates(img, curr_border, candidates)
 
-            no_change = True
-            for i in range(num_candidates):
-                p = candidates[i, 0]
-                r = candidates[i, 1]
-                c = candidates[i, 2]
-                if img[p, r, c] != 1:
-                    continue
-                _get_neighborhood(img, p, r, c, neighborhood)
-                if _is_simple_point(neighborhood):
-                    img[p, r, c] = 0
-                    no_change = False
+            if num_candidates == 0:
+                unchanged_borders += 1
+                continue
 
-            if no_change:
+            _mark_removable_candidates(img, candidates, num_candidates, removable)
+            removed = _apply_removals(img, candidates, num_candidates, removable)
+
+            if removed == 0:
                 unchanged_borders += 1
 
     return img
