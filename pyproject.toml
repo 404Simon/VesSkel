@@ -13,6 +13,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+napari = ["napari[all]"]
 dev = [
     "pytest>=9.0.2",
     "pytest-xdist>=3.8.0",
@@ -26,6 +27,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["vesskel*"]
+
+[project.entry-points."napari.manifest"]
+vesskel = "vesskel:napari.yaml"
 
 [tool.pytest.ini_options]
 addopts = "-n auto"

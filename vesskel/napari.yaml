@@ -1,0 +1,12 @@
+name: vesskel
+display_name: VesSkel
+categories: [Image Processing, Segmentation]
+contributions:
+  commands:
+    - id: vesskel.lee94_thin
+      title: Lee94 Thinning
+      python_name: vesskel._napari:lee94_thin_widget
+  widgets:
+    - command: vesskel.lee94_thin
+      display_name: Lee94 Thinning
+      autogenerate: true
