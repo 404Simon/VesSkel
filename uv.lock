@@ -880,16 +880,16 @@ dependencies = [
     { name = "numba" },
     { name = "numpy" },
     { name = "pillow" },
-    { name = "pooch" },
-    { name = "scikit-image" },
     { name = "scipy" },
     { name = "skan" },
 ]
 
 [package.optional-dependencies]
 dev = [
+    { name = "pooch" },
     { name = "pytest" },
     { name = "pytest-xdist" },
+    { name = "scikit-image" },
 ]
 
 [package.metadata]
@@ -897,10 +897,10 @@ requires-dist = [
     { name = "numba", specifier = ">=0.65.0" },
     { name = "numpy", specifier = ">=2.4.4" },
     { name = "pillow", specifier = ">=12.2.0" },
-    { name = "pooch", specifier = ">=1.9.0" },
+    { name = "pooch", marker = "extra == 'dev'", specifier = ">=1.9.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.2" },
     { name = "pytest-xdist", marker = "extra == 'dev'", specifier = ">=3.8.0" },
-    { name = "scikit-image", specifier = ">=0.26.0" },
+    { name = "scikit-image", marker = "extra == 'dev'", specifier = ">=0.26.0" },
     { name = "scipy", specifier = ">=1.17.1" },
     { name = "skan", specifier = ">=0.13.1" },
 ]
