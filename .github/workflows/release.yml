@@ -81,6 +81,7 @@ jobs:
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
               f.write(f"new_version={new_version}\n")
           PY
+          uv sync # updates version in lockfile
 
       - name: Commit, tag, and push
         env:
