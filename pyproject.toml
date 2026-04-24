@@ -14,7 +14,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-napari = ["napari[all]"]
+napari = [
+    "napari[all]",
+    "napari-assistant>=0.6.0",
+    "itk>=5.4.6",
+    "napari-simpleitk-image-processing>=0.4.9",
+]
+
 dev = [
     "pytest>=9.0.2",
     "pytest-xdist>=3.8.0",
