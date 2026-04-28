@@ -6,7 +6,13 @@ contributions:
     - id: vesskel.lee94_thin
       title: Lee94 Thinning
       python_name: vesskel._napari:lee94_thin_widget
+    - id: vesskel.extract_branch_features
+      title: Extract Branch Features
+      python_name: vesskel._napari:extract_branch_features_widget
   widgets:
     - command: vesskel.lee94_thin
       display_name: Lee94 Thinning
+      autogenerate: true
+    - command: vesskel.extract_branch_features
+      display_name: Extract Branch Features
       autogenerate: true
