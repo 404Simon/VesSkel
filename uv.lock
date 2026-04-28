@@ -2187,6 +2187,21 @@ wheels = [
 ]
 
 [[package]]
+name = "napari-skimage"
+version = "0.6.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "magicgui" },
+    { name = "numpy" },
+    { name = "qtpy" },
+    { name = "scikit-image" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b8/28/44f447a15776685132f0d4bcc6c6a6f053434cd1c2df9d3509fe2e15598b/napari_skimage-0.6.0.tar.gz", hash = "sha256:d1e00048376daf7455ea2e5745f07dbb11149aa2e4f3edeca3107c1c54a10d84", size = 1610272, upload-time = "2025-09-03T21:57:38.116Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3c/cf/38cbe2c6fbe34547c5b4229b0fd01cdf75737becd9248e67489d8c9e43d3/napari_skimage-0.6.0-py3-none-any.whl", hash = "sha256:f57aec60e9c3b21018ef3cb7be3abbdbc01e89994808bf1d4199c79e5b23f5e8", size = 28205, upload-time = "2025-09-03T21:57:36.622Z" },
+]
+
+[[package]]
 name = "napari-skimage-regionprops"
 version = "0.10.1"
 source = { registry = "https://pypi.org/simple" }
@@ -4015,6 +4030,7 @@ napari = [
     { name = "napari", version = "0.7.0", source = { registry = "https://pypi.org/simple" }, extra = ["all"], marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
     { name = "napari-assistant" },
     { name = "napari-simpleitk-image-processing" },
+    { name = "napari-skimage" },
 ]
 
 [package.metadata]
@@ -4023,6 +4039,7 @@ requires-dist = [
     { name = "napari", extras = ["all"], marker = "extra == 'napari'" },
     { name = "napari-assistant", marker = "extra == 'napari'", specifier = ">=0.6.0" },
     { name = "napari-simpleitk-image-processing", marker = "extra == 'napari'", specifier = ">=0.4.9" },
+    { name = "napari-skimage", marker = "extra == 'napari'", specifier = ">=0.6.0" },
     { name = "numba", specifier = ">=0.65.0" },
     { name = "numpy", specifier = ">=2.4.4" },
     { name = "pillow", specifier = ">=12.2.0" },
