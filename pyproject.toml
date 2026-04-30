@@ -29,6 +29,12 @@ dev = [
     "scikit-image>=0.26.0",
 ]
 
+notebooks = [
+    "seaborn>=0.13.2",
+    "statsmodels>=0.14.6",
+    "scikit-learn>=1.8.0",
+]
+
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
