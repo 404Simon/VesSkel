@@ -2,7 +2,7 @@ import numpy as np
 from numba import njit, prange
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
-from skan import Skeleton, summarize
+from skan import Skeleton
 
 from ._utils import to_binary
 
@@ -122,16 +122,6 @@ def build_vessel_graph(skeleton: np.ndarray) -> Skeleton:
     return Skeleton(to_binary(skeleton))
 
 
-def summarize_skeleton(skeleton: np.ndarray):
-    """Build graph representation and return summarized branch data."""
-    if not np.any(skeleton):
-        from pandas import DataFrame
-
-        return DataFrame()
-    graph = build_vessel_graph(skeleton)
-    return summarize(graph, separator="-")
-
-
 _EMPTY_FEATURES: dict[str, float] = {
     "num_nodes": 0.0,
     "num_edges": 0.0,
@@ -154,6 +144,9 @@ _EMPTY_FEATURES: dict[str, float] = {
 
 def extract_vessel_features(
     skeleton: np.ndarray,
+    graph: Skeleton,
+    branch_data,
+    *,
     include_fractal: bool = True,
 ) -> dict[str, float]:
     """Extract graph-topology and segment statistics from a vessel skeleton.
@@ -161,12 +154,15 @@ def extract_vessel_features(
     Parameters
     ----------
     skeleton : ndarray
-        Binary 2D or 3D skeleton array.
+        Binary 2D or 3D skeleton array. Used only for fractal dimension
+        computation, not for graph topology.
+    graph : Skeleton
+        Pre-built skan Skeleton graph (e.g. from `build_vessel_graph`).
+    branch_data : DataFrame
+        Pre-computed branch summary (e.g. from `skan.summarize(graph, ...)`).
     include_fractal : bool, optional
         Whether to compute fractal dimension (expensive-ish). Default is True.
     """
-    graph = build_vessel_graph(skeleton)
-    branch_data = summarize(graph, separator="-")
     if branch_data.empty:
         return dict(_EMPTY_FEATURES)
 

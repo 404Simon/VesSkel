@@ -3,14 +3,10 @@
 from typing import TYPE_CHECKING
 
 import numpy as np
-from skan import summarize
+from skan import Skeleton
 
 from vesskel.config import ExtractionConfig
-from vesskel.features import (
-    build_vessel_graph,
-    compute_tortuosity,
-    extract_vessel_features,
-)
+from vesskel.features import compute_tortuosity
 
 if TYPE_CHECKING:
     from napari.types import LayerDataTuple
@@ -19,6 +15,8 @@ if TYPE_CHECKING:
 def extract_skeleton_layers(
     skeleton: np.ndarray,
     base_name: str,
+    graph: Skeleton,
+    branch_data,
     config: ExtractionConfig | None = None,
     features: dict[str, float] | None = None,
 ) -> list["napari.types.LayerDataTuple"]:
@@ -30,11 +28,14 @@ def extract_skeleton_layers(
         Binary 2D or 3D skeleton array.
     base_name : str
         Base name for layer naming.
+    graph : Skeleton
+        Pre-built skan Skeleton graph (e.g. from `build_vessel_graph`).
+    branch_data : DataFrame
+        Pre-computed branch summary (e.g. from `skan.summarize(graph, ...)`).
     config : ExtractionConfig, optional
         Configuration for what to extract. Defaults to all except fractal_dimension.
     features : dict, optional
-        Pre-computed feature dictionary to avoid recomputation when caller
-        already has it (e.g. from extract_vessel_features).
+        Pre-computed summary feature dictionary (e.g. from `extract_vessel_features`).
     """
     if config is None:
         config = ExtractionConfig()
@@ -42,7 +43,7 @@ def extract_skeleton_layers(
     layers = []
 
     if config.branches:
-        branch_layer = _extract_branch_features_layer(skeleton, base_name)
+        branch_layer = _extract_branch_features_layer(base_name, graph, branch_data)
         if branch_layer is not None:
             layers.append(branch_layer)
 
@@ -54,7 +55,6 @@ def extract_skeleton_layers(
         summary_layer = _extract_summary_features_layer(
             skeleton,
             base_name,
-            include_fractal=config.fractal_dimension,
             features=features,
         )
         layers.append(summary_layer)
@@ -63,33 +63,40 @@ def extract_skeleton_layers(
 
 
 def _extract_branch_features_layer(
-    skeleton: np.ndarray,
     base_name: str,
+    graph: Skeleton,
+    branch_data,
 ) -> "napari.types.LayerDataTuple | None":
     """Extract branch features and generate paths layer.
 
-    Returns None if skeleton has no branches.
-    """
-    graph = build_vessel_graph(skeleton)
-    branch_data = summarize(graph, separator="-")
+    Parameters
+    ----------
+    base_name : str
+        Base name used for layer naming.
+    graph : Skeleton
+        Pre-built skan Skeleton graph.
+    branch_data : DataFrame
+        Pre-computed branch summary from `skan.summarize`.
 
+    Returns
+    -------
+    LayerDataTuple or None
+        Napari shapes layer for branch paths, or None if skeleton has no branches.
+    """
     if branch_data.empty:
         return None
 
     branch_data = branch_data.reset_index(drop=True).copy()
     branch_data["branch_id"] = np.arange(len(branch_data), dtype=np.int64)
 
-    # Compute tortuosity
     euclidean = branch_data["euclidean-distance"].to_numpy(dtype=float)
     branch_len = branch_data["branch-distance"].to_numpy(dtype=float)
     tortuosity = compute_tortuosity(branch_len, euclidean)
     tortuosity = np.nan_to_num(tortuosity, nan=1.0)
     branch_data["tortuosity"] = tortuosity
 
-    # Get branch path coordinates
     path_data = [graph.path_coordinates(i) for i in range(len(branch_data))]
 
-    # Determine if tortuosity varies significantly
     finite_tortuosity = tortuosity[np.isfinite(tortuosity)]
     varied_tortuosity = finite_tortuosity.size > 0 and float(
         np.min(finite_tortuosity)
@@ -120,11 +127,9 @@ def _extract_branch_text_layer(
     branch_layer: "napari.types.LayerDataTuple",
     base_name: str,
 ) -> "napari.types.LayerDataTuple":
-    """Create text labels for branches."""
     path_data = branch_layer[0]
     branch_data = branch_layer[1]["properties"]
 
-    # Compute label positions as mean of each path
     label_points = []
     for coords in path_data:
         if len(coords) == 0:
@@ -154,24 +159,22 @@ def _extract_branch_text_layer(
 def _extract_summary_features_layer(
     skeleton: np.ndarray,
     base_name: str,
-    include_fractal: bool = False,
-    features: dict[str, float] | None = None,
+    features: dict[str, float],
 ) -> "napari.types.LayerDataTuple":
-    """Extract global skeleton features and create summary point layer.
+    """Create a summary point layer displaying global skeleton features.
 
     Parameters
     ----------
-    features : dict, optional
-        Pre-computed feature dictionary. If provided, skips computation.
+    skeleton : ndarray
+        Binary 2D or 3D skeleton array. Used to position the summary label.
+    base_name : str
+        Base name for layer naming.
+    features : dict[str, float]
+        Pre-computed summary feature dictionary
+        (e.g. from `extract_vessel_features`).
     """
-    if features is None:
-        features = extract_vessel_features(
-            skeleton,
-            include_fractal=include_fractal,
-        )
     meta_features = {k: [v] for k, v in features.items()}
 
-    # Find center of foreground
     fg = np.argwhere(skeleton > 0)
     if fg.size:
         center = fg.mean(axis=0, dtype=float)

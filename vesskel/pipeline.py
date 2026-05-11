@@ -6,11 +6,12 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
+from skan import summarize
 
 from vesskel._utils import to_binary
 from vesskel.config import PipelineConfig
 from vesskel.extraction import extract_skeleton_layers
-from vesskel.features import extract_vessel_features, summarize_skeleton
+from vesskel.features import build_vessel_graph, extract_vessel_features
 from vesskel.thin import lee94_thin
 
 if TYPE_CHECKING:
@@ -54,26 +55,30 @@ def analyze_binary_image(
             branch_records=[],
         )
 
+    graph = build_vessel_graph(skeleton)
+    branch_data = summarize(graph, separator="-")
+
     summary_features: dict[str, float] = {}
     if config.extraction.summary:
         summary_features = extract_vessel_features(
             skeleton,
+            graph,
+            branch_data,
             include_fractal=config.extraction.fractal_dimension,
         )
 
     layers = extract_skeleton_layers(
         skeleton,
         base_name,
-        config.extraction,
+        graph=graph,
+        branch_data=branch_data,
+        config=config.extraction,
         features=summary_features if config.extraction.summary else None,
     )
 
     branch_records: list[dict[str, object]] = []
-    if config.extraction.branches:
-        branch_table = summarize_skeleton(skeleton)
-        if not branch_table.empty:
-            # Keep native column names for traceability with skan output.
-            branch_records = branch_table.to_dict(orient="records")
+    if config.extraction.branches and not branch_data.empty:
+        branch_records = branch_data.to_dict(orient="records")
 
     return AnalysisResult(
         skeleton=skeleton,

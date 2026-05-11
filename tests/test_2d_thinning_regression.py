@@ -10,8 +10,9 @@ regression (or an intentional algorithm change).
 
 import numpy as np
 import pytest
+from skan import summarize
 
-from vesskel.features import extract_vessel_features
+from vesskel.features import build_vessel_graph, extract_vessel_features
 from vesskel.hrf import HRFDataset, preprocess_segmentation
 from vesskel.thin import lee94_thin
 
@@ -50,7 +51,9 @@ class TestThinningRegression:
         info = dataset.image_list[index]
         name = info["name"]
         skeleton = _compute_skeleton(dataset, index)
-        features = extract_vessel_features(skeleton)
+        graph = build_vessel_graph(skeleton)
+        branch_data = summarize(graph, separator="-")
+        features = extract_vessel_features(skeleton, graph, branch_data)
         baseline_file = skeleton_path(name)
         feature_file = feature_path(name)
 

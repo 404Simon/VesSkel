@@ -2,9 +2,10 @@
 
 import numpy as np
 import pytest
+from skan import summarize
 from skimage import data
 
-from vesskel.features import extract_vessel_features
+from vesskel.features import build_vessel_graph, extract_vessel_features
 from vesskel.thin import lee94_thin
 
 from ._helpers import (
@@ -31,7 +32,9 @@ class Test3DThinningRegression:
 
     def test_skeleton_matches_baseline(self, image, request):
         skeleton = _compute_skeleton(image)
-        features = extract_vessel_features(skeleton)
+        graph = build_vessel_graph(skeleton)
+        branch_data = summarize(graph, separator="-")
+        features = extract_vessel_features(skeleton, graph, branch_data)
         name = "brain"
         baseline_file = skeleton_path(name)
         feature_file = feature_path(name)

@@ -164,10 +164,12 @@ def _run_batch(args: argparse.Namespace) -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     summary_rows: list[dict[str, object]] = []
-
     output_name_counts: dict[str, int] = {}
+    total = len(input_paths)
 
-    for in_path in input_paths:
+    for idx, in_path in enumerate(input_paths, 1):
+        print(f"[{idx}/{total}] {in_path.name}", flush=True)
+
         image = _load_image(in_path)
         result = analyze_binary_image(
             image=image, base_name=in_path.stem, config=config
