@@ -1,17 +1,17 @@
 name: vesskel
 display_name: VesSkel
-version: 1.2.1
+version: 2.0.0
 categories:
 - Image Processing
 - Segmentation
 napari: 0.4
-description: "Vessel skeletonization and feature extraction for napari"
+description: Vessel skeletonization and feature extraction for napari
 license: MIT
 contributions:
   commands:
-    - id: vesskel.analyze_vessels
-      title: Analyze Vessels
-      python_name: vesskel._napari:VesselAnalysisWidget
+  - id: vesskel.analyze_vessels
+    title: Analyze Vessels
+    python_name: vesskel._napari:VesselAnalysisWidget
   widgets:
-    - command: vesskel.analyze_vessels
-      display_name: Analyze Vessels
+  - command: vesskel.analyze_vessels
+    display_name: Analyze Vessels
