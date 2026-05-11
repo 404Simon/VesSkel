@@ -4116,12 +4116,13 @@ wheels = [
 
 [[package]]
 name = "vesskel"
-version = "1.2.0"
+version = "1.2.1"
 source = { editable = "." }
 dependencies = [
     { name = "numba" },
     { name = "numpy" },
     { name = "pillow" },
+    { name = "pyyaml" },
     { name = "scipy" },
     { name = "skan" },
 ]
@@ -4160,6 +4161,7 @@ requires-dist = [
     { name = "pooch", marker = "extra == 'dev'", specifier = ">=1.9.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.2" },
     { name = "pytest-xdist", marker = "extra == 'dev'", specifier = ">=3.8.0" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "scikit-image", marker = "extra == 'dev'", specifier = ">=0.26.0" },
     { name = "scikit-learn", marker = "extra == 'notebooks'", specifier = ">=1.8.0" },
     { name = "scipy", specifier = ">=1.17.1" },
