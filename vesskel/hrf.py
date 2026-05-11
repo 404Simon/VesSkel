@@ -5,6 +5,8 @@ import numpy as np
 from PIL import Image
 from scipy import ndimage
 
+from ._utils import to_binary
+
 
 class HRFDataset:
     """
@@ -68,12 +70,12 @@ class HRFDataset:
         image = np.array(Image.open(info["image_path"]))
 
         seg = np.array(Image.open(info["segmentation_path"]))
-        segmentation = (seg > 0).astype(np.uint8)
+        segmentation = to_binary(seg)
 
         mask = np.array(Image.open(info["mask_path"]))
         if mask.ndim == 3:
             mask = mask[:, :, 0]
-        mask = (mask > 0).astype(np.uint8)
+        mask = to_binary(mask)
 
         return image, segmentation, mask, info
 

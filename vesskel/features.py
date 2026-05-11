@@ -4,6 +4,8 @@ from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
 from skan import Skeleton, summarize
 
+from ._utils import to_binary
+
 
 @njit(parallel=True, cache=True)
 def _box_count_2d(img: np.ndarray, scale: int) -> int:
@@ -64,6 +66,17 @@ def _box_count_3d(img: np.ndarray, scale: int) -> int:
     return count
 
 
+def compute_tortuosity(lengths: np.ndarray, euclidean: np.ndarray) -> np.ndarray:
+    """Compute tortuosity as branch-distance / euclidean-distance.
+
+    Returns NaN where euclidean distance is zero.
+    """
+    tortuosity = np.full_like(lengths, np.nan, dtype=float)
+    valid = euclidean > 0
+    tortuosity[valid] = lengths[valid] / euclidean[valid]
+    return tortuosity
+
+
 def fractal_dimension(skeleton: np.ndarray) -> tuple[float, float]:
     """Estimate fractal dimension of a binary skeleton via box-counting.
 
@@ -74,7 +87,7 @@ def fractal_dimension(skeleton: np.ndarray) -> tuple[float, float]:
     r2 : float
         R^2 of the log-log linear fit (fit quality indicator).
     """
-    binary = (skeleton > 0).view(np.uint8)
+    binary = to_binary(skeleton)
     min_side = min(binary.shape)
     max_exp = int(np.floor(np.log2(min_side // 4)))
     if max_exp < 1:
@@ -106,36 +119,58 @@ def fractal_dimension(skeleton: np.ndarray) -> tuple[float, float]:
 
 def build_vessel_graph(skeleton: np.ndarray) -> Skeleton:
     """Build a graph representation from a binary vessel skeleton."""
-    return Skeleton((skeleton > 0).astype(np.uint8))
+    return Skeleton(to_binary(skeleton))
+
+
+def summarize_skeleton(skeleton: np.ndarray):
+    """Build graph representation and return summarized branch data."""
+    if not np.any(skeleton):
+        from pandas import DataFrame
+
+        return DataFrame()
+    graph = build_vessel_graph(skeleton)
+    return summarize(graph, separator="-")
+
+
+_EMPTY_FEATURES: dict[str, float] = {
+    "num_nodes": 0.0,
+    "num_edges": 0.0,
+    "num_endpoints": 0.0,
+    "num_bifurcations": 0.0,
+    "total_length": 0.0,
+    "mean_length": 0.0,
+    "std_length": 0.0,
+    "max_length": 0.0,
+    "min_length": 0.0,
+    "mean_tortuosity": 0.0,
+    "std_tortuosity": 0.0,
+    "num_components": 0.0,
+    "mean_degree": 0.0,
+    "max_degree": 0.0,
+    "fractal_dimension": 0.0,
+    "fractal_dimension_r2": 0.0,
+}
 
 
 def extract_vessel_features(
     skeleton: np.ndarray,
+    include_fractal: bool = True,
 ) -> dict[str, float]:
-    """Extract graph-topology and segment statistics from a vessel skeleton."""
+    """Extract graph-topology and segment statistics from a vessel skeleton.
+
+    Parameters
+    ----------
+    skeleton : ndarray
+        Binary 2D or 3D skeleton array.
+    include_fractal : bool, optional
+        Whether to compute fractal dimension (expensive-ish). Default is True.
+    """
     graph = build_vessel_graph(skeleton)
     branch_data = summarize(graph, separator="-")
     if branch_data.empty:
-        return {
-            "num_nodes": 0.0,
-            "num_edges": 0.0,
-            "num_endpoints": 0.0,
-            "num_bifurcations": 0.0,
-            "total_length": 0.0,
-            "mean_length": 0.0,
-            "std_length": 0.0,
-            "max_length": 0.0,
-            "min_length": 0.0,
-            "mean_tortuosity": 0.0,
-            "std_tortuosity": 0.0,
-            "num_components": 0.0,
-            "mean_degree": 0.0,
-            "max_degree": 0.0,
-            "fractal_dimension": 0.0,
-            "fractal_dimension_r2": 0.0,
-        }
+        return dict(_EMPTY_FEATURES)
 
-    fd, fd_r2 = fractal_dimension(skeleton)
+    fd, fd_r2 = fractal_dimension(skeleton) if include_fractal else (0.0, 0.0)
 
     src_nodes = branch_data["node-id-src"].to_numpy(dtype=np.int64)
     dst_nodes = branch_data["node-id-dst"].to_numpy(dtype=np.int64)
@@ -187,8 +222,8 @@ def extract_vessel_features(
         max_length = 0.0
         min_length = 0.0
 
-    valid_tortuosity = euclidean > 0
-    tortuosity = lengths[valid_tortuosity] / euclidean[valid_tortuosity]
+    tortuosity = compute_tortuosity(lengths, euclidean)
+    tortuosity = tortuosity[~np.isnan(tortuosity)]
     if tortuosity.size:
         mean_tortuosity = float(np.mean(tortuosity))
         std_tortuosity = float(np.std(tortuosity))

@@ -1,0 +1,122 @@
+"""Shared configuration models and helpers."""
+
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+CONFIG_SCHEMA_VERSION = 1
+
+
+@dataclass
+class ExtractionConfig:
+    """Configuration for what to extract from a skeleton."""
+
+    branches: bool = True
+    branch_text: bool = True
+    summary: bool = True
+    fractal_dimension: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "branches": self.branches,
+            "branch_text": self.branch_text,
+            "summary": self.summary,
+            "fractal_dimension": self.fractal_dimension,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ExtractionConfig:
+        return cls(
+            branches=data.get("branches", True),
+            branch_text=data.get("branch_text", True),
+            summary=data.get("summary", True),
+            fractal_dimension=data.get("fractal_dimension", False),
+        )
+
+
+@dataclass
+class OutputConfig:
+    """Output controls for batch CLI runs."""
+
+    write_skeleton: bool = True
+    skeleton_format: str = "npy"
+    write_summary_csv: bool = True
+    write_branch_csv: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "write_skeleton": self.write_skeleton,
+            "skeleton_format": self.skeleton_format,
+            "write_summary_csv": self.write_summary_csv,
+            "write_branch_csv": self.write_branch_csv,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any] | None) -> OutputConfig:
+        data = data or {}
+        skeleton_format = str(data.get("skeleton_format", "npy")).lower()
+        if skeleton_format not in {"npy", "png"}:
+            raise ValueError("output.skeleton_format must be one of: npy, png")
+        return cls(
+            write_skeleton=bool(data.get("write_skeleton", True)),
+            skeleton_format=skeleton_format,
+            write_summary_csv=bool(data.get("write_summary_csv", True)),
+            write_branch_csv=bool(data.get("write_branch_csv", False)),
+        )
+
+
+@dataclass
+class PipelineConfig:
+    """Top-level config shared by napari and batch CLI."""
+
+    extraction: ExtractionConfig
+    output: OutputConfig
+    schema_version: int = CONFIG_SCHEMA_VERSION
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "extraction": self.extraction.to_dict(),
+            "output": self.output.to_dict(),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> PipelineConfig:
+        if not isinstance(data, dict):
+            raise ValueError("Config JSON must be an object")
+
+        schema_version = int(data.get("schema_version", CONFIG_SCHEMA_VERSION))
+        if schema_version != CONFIG_SCHEMA_VERSION:
+            raise ValueError(
+                f"Unsupported schema_version={schema_version}. "
+                f"Expected {CONFIG_SCHEMA_VERSION}."
+            )
+
+        extraction_data = data.get("extraction", {})
+        output_data = data.get("output", {})
+
+        if not isinstance(extraction_data, dict):
+            raise ValueError("'extraction' must be an object")
+        if not isinstance(output_data, dict):
+            raise ValueError("'output' must be an object")
+
+        return cls(
+            extraction=ExtractionConfig.from_dict(extraction_data),
+            output=OutputConfig.from_dict(output_data),
+            schema_version=schema_version,
+        )
+
+
+def load_pipeline_config(path: str | Path) -> PipelineConfig:
+    """Load and parse a pipeline config from JSON file."""
+    with Path(path).open() as f:
+        return PipelineConfig.from_dict(json.load(f))
+
+
+def save_pipeline_config(config: PipelineConfig, path: str | Path) -> None:
+    """Save a pipeline config to JSON file."""
+    with Path(path).open("w") as f:
+        json.dump(config.to_dict(), f, indent=2)

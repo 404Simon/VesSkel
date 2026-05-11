@@ -4,18 +4,14 @@ version: 1.2.1
 categories:
 - Image Processing
 - Segmentation
+napari: 0.4
+description: "Vessel skeletonization and feature extraction for napari"
+license: MIT
 contributions:
   commands:
-  - id: vesskel.lee94_thin
-    title: Lee94 Thinning
-    python_name: vesskel._napari:lee94_thin_widget
-  - id: vesskel.extract_branch_features
-    title: Extract Branch Features
-    python_name: vesskel._napari:extract_branch_features_widget
+    - id: vesskel.analyze_vessels
+      title: Analyze Vessels
+      python_name: vesskel._napari:VesselAnalysisWidget
   widgets:
-  - command: vesskel.lee94_thin
-    display_name: Lee94 Thinning
-    autogenerate: true
-  - command: vesskel.extract_branch_features
-    display_name: Extract Branch Features
-    autogenerate: true
+    - command: vesskel.analyze_vessels
+      display_name: Analyze Vessels
