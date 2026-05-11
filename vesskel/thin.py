@@ -11,8 +11,6 @@ def lee94_thin(img):
     ----------
     img : ndarray
         2D binary image or 3D binary volume (0=background, 1=foreground).
-    verbose : bool, optional
-        Passed through to the underlying implementation.
 
     Returns
     -------

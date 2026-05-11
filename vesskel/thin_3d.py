@@ -402,7 +402,23 @@ def _compute_thin_image(img):
 
 
 def thin_3d(img):
-    """Lee94 thinning algorithm for a 3D binary volume."""
+    """Lee94 thinning algorithm for a 3D binary volume.
+
+    Parameters
+    ----------
+    img : ndarray
+        3D binary volume (0=background, 1=foreground).
+
+    Returns
+    -------
+    ndarray
+        Thinned binary volume with the same shape as img.
+
+    Raises
+    ------
+    ValueError
+        If input is not 3-dimensional.
+    """
     if img.ndim != 3:
         raise ValueError(f"Expected 3D input, got {img.ndim}D")
 
