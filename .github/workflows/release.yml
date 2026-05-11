@@ -39,19 +39,21 @@ jobs:
       - name: Run tests
         run: uv run pytest tests
 
-      - name: Bump version in pyproject.toml
+      - name: Bump version in pyproject.toml and napari.yaml
         id: bump_version
         env:
           BUMP_TYPE: ${{ github.event.inputs.bump }}
         run: |
-          python - <<'PY'
+          uv add PyYAML
+          uv run python - <<'PY'
           import os
           import re
+          import yaml
 
-          path = "pyproject.toml"
           bump = os.environ["BUMP_TYPE"]
 
-          with open(path, "r", encoding="utf-8") as f:
+          # --- pyproject.toml ---
+          with open("pyproject.toml", "r", encoding="utf-8") as f:
               content = f.read()
 
           m = re.search(r'^version\s*=\s*"(\d+)\.(\d+)\.(\d+)"\s*$', content, re.MULTILINE)
@@ -75,8 +77,15 @@ jobs:
           new_line = f'version = "{new_version}"'
           content = re.sub(r'^version\s*=\s*"\d+\.\d+\.\d+"\s*$', new_line, content, count=1, flags=re.MULTILINE)
 
-          with open(path, "w", encoding="utf-8") as f:
+          with open("pyproject.toml", "w", encoding="utf-8") as f:
               f.write(content)
+
+          # --- napari.yaml ---
+          with open("vesskel/napari.yaml", "r") as f:
+              manifest = yaml.safe_load(f)
+          manifest["version"] = new_version
+          with open("vesskel/napari.yaml", "w") as f:
+              yaml.dump(manifest, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
 
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
               f.write(f"new_version={new_version}\n")
@@ -91,6 +100,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add pyproject.toml
           git add uv.lock
+          git add vesskel/napari.yaml
           git commit -m "chore: release ${NEW_VERSION} [no ci]"
           git tag "${NEW_VERSION}"
           git push origin HEAD

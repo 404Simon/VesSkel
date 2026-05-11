@@ -48,5 +48,8 @@ vesskel = ["napari.yaml"]
 [project.entry-points."napari.manifest"]
 vesskel = "vesskel:napari.yaml"
 
+[project.scripts]
+vesskel = "vesskel.cli:main"
+
 [tool.pytest.ini_options]
 addopts = "-n auto"
