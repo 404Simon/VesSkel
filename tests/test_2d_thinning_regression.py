@@ -8,10 +8,6 @@ saved baselines. Any difference is reported as a test failure, indicating a
 regression (or an intentional algorithm change).
 """
 
-import csv
-import hashlib
-from pathlib import Path
-
 import numpy as np
 import pytest
 
@@ -19,51 +15,22 @@ from vesskel.features import extract_vessel_features
 from vesskel.hrf import HRFDataset, preprocess_segmentation
 from vesskel.thin import lee94_thin
 
-BASELINE_DIR = Path(__file__).parent / "skeletons"
-FEATURE_DIR = Path(__file__).parent / "features"
+from ._helpers import (
+    BASELINE_DIR,
+    feature_path,
+    hash_array,
+    read_feature_csv,
+    skeleton_path,
+    write_feature_csv,
+)
+
 HRF_PATH = "HRF"
-
-
-def _skeleton_path(name: str) -> Path:
-    return BASELINE_DIR / f"skeleton_{name}.npz"
-
-
-def _feature_path(name: str) -> Path:
-    return FEATURE_DIR / f"features_{name}.csv"
 
 
 def _compute_skeleton(dataset: HRFDataset, index: int) -> np.ndarray:
     _, seg, mask, _ = dataset.load_sample(index)
     cleaned = preprocess_segmentation(seg, mask)
     return lee94_thin(cleaned)
-
-
-def _write_feature_csv(path: Path, features: dict[str, float]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["feature", "value"])
-        for key in sorted(features):
-            writer.writerow([key, f"{features[key]:.17g}"])
-
-
-def _read_feature_csv(path: Path) -> dict[str, float]:
-    loaded: dict[str, float] = {}
-    with path.open(newline="") as f:
-        reader = csv.reader(f)
-        header = next(reader, None)
-        if header != ["feature", "value"]:
-            raise ValueError("invalid feature csv header")
-        for row in reader:
-            if len(row) != 2:
-                raise ValueError("invalid feature csv row")
-            key, value = row
-            loaded[key] = float(value)
-    return loaded
-
-
-def _hash_array(arr: np.ndarray) -> str:
-    return hashlib.sha256(arr.tobytes()).hexdigest()
 
 
 @pytest.fixture(scope="module")
@@ -84,8 +51,8 @@ class TestThinningRegression:
         name = info["name"]
         skeleton = _compute_skeleton(dataset, index)
         features = extract_vessel_features(skeleton)
-        baseline_file = _skeleton_path(name)
-        feature_file = _feature_path(name)
+        baseline_file = skeleton_path(name)
+        feature_file = feature_path(name)
 
         baseline_changed = False
 
@@ -96,7 +63,7 @@ class TestThinningRegression:
 
         features_changed = False
         if request.config.getoption("--update-baseline") or not feature_file.exists():
-            _write_feature_csv(feature_file, features)
+            write_feature_csv(feature_file, features)
             features_changed = True
 
         if baseline_changed or features_changed:
@@ -116,7 +83,7 @@ class TestThinningRegression:
             baseline = data["skeleton"]
 
         try:
-            baseline_features = _read_feature_csv(feature_file)
+            baseline_features = read_feature_csv(feature_file)
         except (OSError, ValueError) as exc:
             pytest.fail(f"Sample {name}: invalid feature baseline CSV: {exc}")
 
@@ -126,7 +93,7 @@ class TestThinningRegression:
         )
         assert np.array_equal(skeleton, baseline), (
             f"Sample {name}: skeleton differs from baseline "
-            f"(hash {_hash_array(skeleton)} vs {_hash_array(baseline)})"
+            f"(hash {hash_array(skeleton)} vs {hash_array(baseline)})"
         )
 
         feature_keys = sorted(features)
