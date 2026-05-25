@@ -139,6 +139,7 @@ _EMPTY_FEATURES: dict[str, float] = {
     "max_degree": 0.0,
     "fractal_dimension": 0.0,
     "fractal_dimension_r2": 0.0,
+    "hgu": 0.0,
 }
 
 
@@ -227,6 +228,8 @@ def extract_vessel_features(
         mean_tortuosity = 0.0
         std_tortuosity = 0.0
 
+    hgu = total_length / float(num_endpoints) if num_endpoints else 0.0
+
     return {
         "num_nodes": float(num_nodes),
         "num_edges": float(num_edges),
@@ -244,4 +247,5 @@ def extract_vessel_features(
         "max_degree": max_degree,
         "fractal_dimension": fd,
         "fractal_dimension_r2": fd_r2,
+        "hgu": hgu,
     }
