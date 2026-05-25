@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 from skan import summarize
 
-from vesskel.features import build_vessel_graph, extract_vessel_features
+from vesskel.features import build_vessel_graph, compute_radii, extract_vessel_features
 from vesskel.hrf import HRFDataset, preprocess_segmentation
 from vesskel.thin import lee94_thin
 
@@ -28,10 +28,10 @@ from ._helpers import (
 HRF_PATH = "HRF"
 
 
-def _compute_skeleton(dataset: HRFDataset, index: int) -> np.ndarray:
+def _compute_skeleton(dataset: HRFDataset, index: int) -> tuple[np.ndarray, np.ndarray]:
     _, seg, mask, _ = dataset.load_sample(index)
     cleaned = preprocess_segmentation(seg, mask)
-    return lee94_thin(cleaned)
+    return lee94_thin(cleaned), cleaned
 
 
 @pytest.fixture(scope="module")
@@ -50,10 +50,16 @@ class TestThinningRegression:
     def test_skeleton_matches_baseline(self, dataset, index, request):
         info = dataset.image_list[index]
         name = info["name"]
-        skeleton = _compute_skeleton(dataset, index)
+        skeleton, binary = _compute_skeleton(dataset, index)
         graph = build_vessel_graph(skeleton)
         branch_data = summarize(graph, separator="-")
-        features = extract_vessel_features(skeleton, graph, branch_data)
+        _, radius_stats = compute_radii(binary, skeleton)
+        features = extract_vessel_features(
+            skeleton,
+            graph,
+            branch_data,
+            radius_stats=radius_stats,
+        )
         baseline_file = skeleton_path(name)
         feature_file = feature_path(name)
 

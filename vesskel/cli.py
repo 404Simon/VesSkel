@@ -142,16 +142,24 @@ def _write_csv(path: Path, rows: Iterable[dict[str, object]]) -> None:
             writer.writerow({k: _sanitize_for_csv(v) for k, v in row.items()})
 
 
-def _save_skeleton(path: Path, skeleton: np.ndarray, output: OutputConfig) -> None:
-    if output.skeleton_format == "npy":
+def _save_skeleton(
+    path: Path,
+    skeleton: np.ndarray,
+    *,
+    npy: bool = True,
+    png: bool = False,
+) -> None:
+    if npy:
         np.save(path.with_suffix(".npy"), skeleton.astype(np.uint8))
-        return
+    if png:
+        if skeleton.ndim != 2:
+            raise ValueError("PNG skeleton output is only supported for 2D images")
+        img = Image.fromarray((skeleton > 0).astype(np.uint8) * 255)
+        img.save(path.with_suffix(".png"))
 
-    if skeleton.ndim != 2:
-        raise ValueError("PNG skeleton output is only supported for 2D images")
 
-    img = Image.fromarray((skeleton > 0).astype(np.uint8) * 255)
-    img.save(path.with_suffix(".png"))
+def _save_radius(path: Path, radius_matrix: np.ndarray) -> None:
+    np.save(path.with_suffix(".npy"), radius_matrix.astype(np.float64))
 
 
 def _run_batch(args: argparse.Namespace) -> int:
@@ -183,11 +191,18 @@ def _run_batch(args: argparse.Namespace) -> int:
         image_out_dir = out_dir / safe_name
         image_out_dir.mkdir(parents=True, exist_ok=True)
 
-        if config.output.write_skeleton:
+        if config.output.write_skeleton_npy or config.output.write_skeleton_png:
             _save_skeleton(
                 path=image_out_dir / f"{safe_name}_skeleton",
                 skeleton=result.skeleton,
-                output=config.output,
+                npy=config.output.write_skeleton_npy,
+                png=config.output.write_skeleton_png,
+            )
+
+        if config.output.write_radius and result.radius_matrix is not None:
+            _save_radius(
+                image_out_dir / f"{safe_name}_radius",
+                result.radius_matrix,
             )
 
         if config.output.write_branch_csv and result.branch_records:

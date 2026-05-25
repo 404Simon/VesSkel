@@ -19,6 +19,7 @@ def extract_skeleton_layers(
     branch_data,
     config: ExtractionConfig | None = None,
     features: dict[str, float] | None = None,
+    radius_matrix: np.ndarray | None = None,
 ) -> list["napari.types.LayerDataTuple"]:
     """Extract visualization layers from a binary skeleton.
 
@@ -36,6 +37,9 @@ def extract_skeleton_layers(
         Configuration for what to extract. Defaults to all except fractal_dimension.
     features : dict, optional
         Pre-computed summary feature dictionary (e.g. from `extract_vessel_features`).
+    radius_matrix : ndarray, optional
+        Radius matrix from `compute_radii`. When provided, a napari image layer
+        is added showing per-pixel vessel radius on the skeleton.
     """
     if config is None:
         config = ExtractionConfig()
@@ -59,7 +63,31 @@ def extract_skeleton_layers(
         )
         layers.append(summary_layer)
 
+    if radius_matrix is not None:
+        radius_layer = _extract_radius_layer(radius_matrix, skeleton, base_name)
+        if radius_layer is not None:
+            layers.append(radius_layer)
+
     return layers
+
+
+def _extract_radius_layer(
+    radius_matrix: np.ndarray,
+    skeleton: np.ndarray,
+    base_name: str,
+) -> "napari.types.LayerDataTuple | None":
+    """Create an image layer showing per-pixel vessel radius on the skeleton."""
+    if not np.any(radius_matrix):
+        return None
+
+    display = np.where(skeleton > 0, radius_matrix, np.nan)
+    meta = {
+        "name": f"{base_name}_radius",
+        "colormap": "turbo",
+        "blending": "additive",
+        "opacity": 0.85,
+    }
+    return (display, meta, "image")
 
 
 def _extract_branch_features_layer(

@@ -11,7 +11,7 @@ from skan import summarize
 from vesskel._utils import to_binary
 from vesskel.config import PipelineConfig
 from vesskel.extraction import extract_skeleton_layers
-from vesskel.features import build_vessel_graph, extract_vessel_features
+from vesskel.features import build_vessel_graph, compute_radii, extract_vessel_features
 from vesskel.thin import lee94_thin
 
 if TYPE_CHECKING:
@@ -26,6 +26,7 @@ class AnalysisResult:
     layers: list["napari.types.LayerDataTuple"]
     summary_features: dict[str, float]
     branch_records: list[dict[str, object]]
+    radius_matrix: np.ndarray | None = None
 
 
 def analyze_binary_image(
@@ -58,6 +59,11 @@ def analyze_binary_image(
     graph = build_vessel_graph(skeleton)
     branch_data = summarize(graph, separator="-")
 
+    radius_matrix = None
+    radius_stats = None
+    if config.extraction.vessel_radius:
+        radius_matrix, radius_stats = compute_radii(binary, skeleton)
+
     summary_features: dict[str, float] = {}
     if config.extraction.summary:
         summary_features = extract_vessel_features(
@@ -65,6 +71,7 @@ def analyze_binary_image(
             graph,
             branch_data,
             include_fractal=config.extraction.fractal_dimension,
+            radius_stats=radius_stats,
         )
 
     layers = extract_skeleton_layers(
@@ -74,6 +81,7 @@ def analyze_binary_image(
         branch_data=branch_data,
         config=config.extraction,
         features=summary_features if config.extraction.summary else None,
+        radius_matrix=radius_matrix,
     )
 
     branch_records: list[dict[str, object]] = []
@@ -85,4 +93,5 @@ def analyze_binary_image(
         layers=layers,
         summary_features=summary_features,
         branch_records=branch_records,
+        radius_matrix=radius_matrix,
     )

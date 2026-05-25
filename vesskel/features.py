@@ -1,5 +1,6 @@
 import numpy as np
 from numba import njit, prange
+from scipy.ndimage import distance_transform_edt
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
 from skan import Skeleton
@@ -117,6 +118,57 @@ def fractal_dimension(skeleton: np.ndarray) -> tuple[float, float]:
     return fd, float(r2)
 
 
+def compute_radii(
+    binary: np.ndarray,
+    skeleton: np.ndarray,
+) -> tuple[np.ndarray, dict[str, float]]:
+    """Compute vessel radii via Euclidean distance transform of the binary mask.
+
+    The distance transform gives each foreground pixel its distance to the
+    nearest background pixel. Sampling these values at skeleton positions
+    yields the local vessel radius at every centerline point.
+
+    Parameters
+    ----------
+    binary : ndarray
+        Binary vessel mask (foreground > 0).
+    skeleton : ndarray
+        Binary skeleton of the same shape.
+
+    Returns
+    -------
+    radius_matrix : ndarray, shape=binary.shape, dtype=float64
+        Array with radius values at skeleton pixels and zero elsewhere.
+    stats : dict[str, float]
+        Aggregated statistics (keys: ``mean_radius``, ``std_radius``,
+        ``min_radius``, ``max_radius``, ``mean_diameter``, ``std_diameter``,
+        ``min_diameter``, ``max_diameter``).
+    """
+    edt = distance_transform_edt(binary)
+    radius_matrix = np.zeros_like(binary, dtype=np.float64)
+    radius_matrix[skeleton > 0] = edt[skeleton > 0]
+
+    radii = radius_matrix[radius_matrix > 0]
+    if radii.size:
+        mean_r = float(np.mean(radii))
+        std_r = float(np.std(radii))
+        min_r = float(np.min(radii))
+        max_r = float(np.max(radii))
+    else:
+        mean_r = std_r = min_r = max_r = 0.0
+
+    return radius_matrix, {
+        "mean_radius": mean_r,
+        "std_radius": std_r,
+        "min_radius": min_r,
+        "max_radius": max_r,
+        "mean_diameter": 2.0 * mean_r,
+        "std_diameter": 2.0 * std_r,
+        "min_diameter": 2.0 * min_r,
+        "max_diameter": 2.0 * max_r,
+    }
+
+
 def build_vessel_graph(skeleton: np.ndarray) -> Skeleton:
     """Build a graph representation from a binary vessel skeleton."""
     return Skeleton(to_binary(skeleton))
@@ -140,6 +192,14 @@ _EMPTY_FEATURES: dict[str, float] = {
     "fractal_dimension": 0.0,
     "fractal_dimension_r2": 0.0,
     "hgu": 0.0,
+    "mean_radius": 0.0,
+    "std_radius": 0.0,
+    "min_radius": 0.0,
+    "max_radius": 0.0,
+    "mean_diameter": 0.0,
+    "std_diameter": 0.0,
+    "min_diameter": 0.0,
+    "max_diameter": 0.0,
 }
 
 
@@ -149,6 +209,7 @@ def extract_vessel_features(
     branch_data,
     *,
     include_fractal: bool = True,
+    radius_stats: dict[str, float] | None = None,
 ) -> dict[str, float]:
     """Extract graph-topology and segment statistics from a vessel skeleton.
 
@@ -163,6 +224,9 @@ def extract_vessel_features(
         Pre-computed branch summary (e.g. from `skan.summarize(graph, ...)`).
     include_fractal : bool, optional
         Whether to compute fractal dimension (expensive-ish). Default is True.
+    radius_stats : dict[str, float], optional
+        Pre-computed radius/diameter statistics from `compute_radii`.
+        When None, radius features default to zero.
     """
     if branch_data.empty:
         return dict(_EMPTY_FEATURES)
@@ -230,6 +294,20 @@ def extract_vessel_features(
 
     hgu = total_length / float(num_endpoints) if num_endpoints else 0.0
 
+    if radius_stats is not None:
+        radius = radius_stats
+    else:
+        radius = {
+            "mean_radius": 0.0,
+            "std_radius": 0.0,
+            "min_radius": 0.0,
+            "max_radius": 0.0,
+            "mean_diameter": 0.0,
+            "std_diameter": 0.0,
+            "min_diameter": 0.0,
+            "max_diameter": 0.0,
+        }
+
     return {
         "num_nodes": float(num_nodes),
         "num_edges": float(num_edges),
@@ -248,4 +326,5 @@ def extract_vessel_features(
         "fractal_dimension": fd,
         "fractal_dimension_r2": fd_r2,
         "hgu": hgu,
+        **radius,
     }

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-CONFIG_SCHEMA_VERSION = 1
+CONFIG_SCHEMA_VERSION = 2
 
 
 @dataclass
@@ -18,6 +18,7 @@ class ExtractionConfig:
     branch_text: bool = True
     summary: bool = True
     fractal_dimension: bool = False
+    vessel_radius: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -25,6 +26,7 @@ class ExtractionConfig:
             "branch_text": self.branch_text,
             "summary": self.summary,
             "fractal_dimension": self.fractal_dimension,
+            "vessel_radius": self.vessel_radius,
         }
 
     @classmethod
@@ -34,6 +36,7 @@ class ExtractionConfig:
             branch_text=data.get("branch_text", True),
             summary=data.get("summary", True),
             fractal_dimension=data.get("fractal_dimension", False),
+            vessel_radius=data.get("vessel_radius", False),
         )
 
 
@@ -41,30 +44,30 @@ class ExtractionConfig:
 class OutputConfig:
     """Output controls for batch CLI runs."""
 
-    write_skeleton: bool = True
-    skeleton_format: str = "npy"
+    write_skeleton_npy: bool = True
+    write_skeleton_png: bool = False
     write_summary_csv: bool = True
     write_branch_csv: bool = False
+    write_radius: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "write_skeleton": self.write_skeleton,
-            "skeleton_format": self.skeleton_format,
+            "write_skeleton_npy": self.write_skeleton_npy,
+            "write_skeleton_png": self.write_skeleton_png,
             "write_summary_csv": self.write_summary_csv,
             "write_branch_csv": self.write_branch_csv,
+            "write_radius": self.write_radius,
         }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any] | None) -> OutputConfig:
         data = data or {}
-        skeleton_format = str(data.get("skeleton_format", "npy")).lower()
-        if skeleton_format not in {"npy", "png"}:
-            raise ValueError("output.skeleton_format must be one of: npy, png")
         return cls(
-            write_skeleton=bool(data.get("write_skeleton", True)),
-            skeleton_format=skeleton_format,
+            write_skeleton_npy=bool(data.get("write_skeleton_npy", True)),
+            write_skeleton_png=bool(data.get("write_skeleton_png", False)),
             write_summary_csv=bool(data.get("write_summary_csv", True)),
             write_branch_csv=bool(data.get("write_branch_csv", False)),
+            write_radius=bool(data.get("write_radius", False)),
         )
 
 

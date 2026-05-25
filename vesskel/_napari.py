@@ -28,7 +28,7 @@ from vesskel.pipeline import analyze_binary_image
 
 
 class VesselAnalysisWidget(Container):
-    """Analysis widget with configurable extraction."""
+    """Analysis configuration widget."""
 
     _CONFIG_FILTER = "JSON Files (*.json);;All Files (*)"
 
@@ -38,17 +38,19 @@ class VesselAnalysisWidget(Container):
         self._setup_ui()
 
     def _setup_ui(self):
-        def _params(
+        # ---------- extraction parameters (magicgui) ----------
+        def _extraction_params(
             image: "napari.layers.Image",
             extract_branches: bool = True,
             extract_branch_text: bool = True,
             extract_summary: bool = True,
             include_fractal: bool = False,
+            include_vessel_radius: bool = False,
         ) -> None:
             return None
 
-        params_gui = magicgui(
-            _params,
+        extraction_gui = magicgui(
+            _extraction_params,
             image={"label": "Input image"},
             extract_branches={"annotation": bool, "value": True},
             extract_branch_text={"annotation": bool, "value": True},
@@ -56,36 +58,87 @@ class VesselAnalysisWidget(Container):
             include_fractal={"annotation": bool, "value": False},
         )
 
-        self._params_gui = params_gui
-        self.image_widget = params_gui.image
+        # ---------- output parameters (magicgui) ----------
+        def _output_params(
+            write_skeleton_npy: bool = True,
+            write_skeleton_png: bool = False,
+            write_summary_csv: bool = True,
+            write_branch_csv: bool = False,
+            write_radius: bool = False,
+        ) -> None:
+            return None
 
-        # === Layer Selection Section ===
-        layer_group = Container()
-        layer_group.label = "Extraction Layers"
+        output_gui = magicgui(_output_params)
 
-        self.extract_branches_widget = params_gui.extract_branches
+        self._extraction_gui = extraction_gui
+        self._output_gui = output_gui
+        self.image_widget = extraction_gui.image
+
+        # ============================================================
+        # Extraction Layers
+        # ============================================================
+        extraction_group = Container()
+        extraction_group.label = "Extraction Layers"
+
+        self.extract_branches_widget = extraction_gui.extract_branches
         self.extract_branches_widget.label = "Extract branches"
 
-        self.extract_branch_text_widget = params_gui.extract_branch_text
+        self.extract_branch_text_widget = extraction_gui.extract_branch_text
         self.extract_branch_text_widget.label = "Add branch labels"
 
-        self.extract_summary_widget = params_gui.extract_summary
+        self.extract_summary_widget = extraction_gui.extract_summary
         self.extract_summary_widget.label = "Extract summary statistics"
 
-        layer_group.append(self.extract_branches_widget)
-        layer_group.append(self.extract_branch_text_widget)
-        layer_group.append(self.extract_summary_widget)
+        extraction_group.append(self.extract_branches_widget)
+        extraction_group.append(self.extract_branch_text_widget)
+        extraction_group.append(self.extract_summary_widget)
 
-        # === Advanced Features Section ===
+        # ============================================================
+        # Advanced Features
+        # ============================================================
         advanced_group = Container()
         advanced_group.label = "Advanced Features"
 
-        self.include_fractal_widget = params_gui.include_fractal
+        self.include_fractal_widget = extraction_gui.include_fractal
         self.include_fractal_widget.label = "Include fractal dimension (slow)"
 
         advanced_group.append(self.include_fractal_widget)
 
-        # === Config Management Section ===
+        self.include_vessel_radius_widget = extraction_gui.include_vessel_radius
+        self.include_vessel_radius_widget.label = "Compute vessel radius and diameter"
+
+        advanced_group.append(self.include_vessel_radius_widget)
+
+        # ============================================================
+        # Output Settings (CLI file export options)
+        # ============================================================
+        output_group = Container()
+        output_group.label = "Output Settings"
+
+        self.write_skeleton_npy_widget = output_gui.write_skeleton_npy
+        self.write_skeleton_npy_widget.label = "Write skeleton (.npy)"
+
+        self.write_skeleton_png_widget = output_gui.write_skeleton_png
+        self.write_skeleton_png_widget.label = "Write skeleton (.png)"
+
+        self.write_summary_csv_widget = output_gui.write_summary_csv
+        self.write_summary_csv_widget.label = "Write summary CSV"
+
+        self.write_branch_csv_widget = output_gui.write_branch_csv
+        self.write_branch_csv_widget.label = "Write branch CSV"
+
+        self.write_radius_widget = output_gui.write_radius
+        self.write_radius_widget.label = "Write radius matrix (.npy)"
+
+        output_group.append(self.write_skeleton_npy_widget)
+        output_group.append(self.write_skeleton_png_widget)
+        output_group.append(self.write_summary_csv_widget)
+        output_group.append(self.write_branch_csv_widget)
+        output_group.append(self.write_radius_widget)
+
+        # ============================================================
+        # Configuration Management
+        # ============================================================
         config_group = Container()
         config_group.label = "Configuration"
 
@@ -98,40 +151,69 @@ class VesselAnalysisWidget(Container):
         config_group.append(self.load_btn)
         config_group.append(self.save_btn)
 
-        # === Analyze Button ===
+        # ============================================================
+        # Analyze Button
+        # ============================================================
         self.analyze_btn = PushButton(text="Analyze Vessels")
         self.analyze_btn.clicked.connect(self._on_analyze)
 
-        # === Add all sections to widget ===
-        # add the image widget (from the params gui)
+        # ============================================================
+        # Assemble widget
+        # ============================================================
         self.append(self.image_widget)
-        self.append(layer_group)
+        self.append(extraction_group)
         self.append(advanced_group)
+        self.append(output_group)
         self.append(config_group)
         self.append(self.analyze_btn)
 
-    def _get_current_config(self) -> ExtractionConfig:
-        """Get current configuration from widget state."""
-        return ExtractionConfig(
-            branches=self.extract_branches_widget.value,
-            branch_text=self.extract_branch_text_widget.value,
-            summary=self.extract_summary_widget.value,
-            fractal_dimension=self.include_fractal_widget.value,
+    # ------------------------------------------------------------------
+    # Config get / set (full PipelineConfig)
+    # ------------------------------------------------------------------
+
+    def _get_current_pipeline_config(self) -> PipelineConfig:
+        return PipelineConfig(
+            extraction=ExtractionConfig(
+                branches=self.extract_branches_widget.value,
+                branch_text=self.extract_branch_text_widget.value,
+                summary=self.extract_summary_widget.value,
+                fractal_dimension=self.include_fractal_widget.value,
+                vessel_radius=self.include_vessel_radius_widget.value,
+            ),
+            output=OutputConfig(
+                write_skeleton_npy=self.write_skeleton_npy_widget.value,
+                write_skeleton_png=self.write_skeleton_png_widget.value,
+                write_summary_csv=self.write_summary_csv_widget.value,
+                write_branch_csv=self.write_branch_csv_widget.value,
+                write_radius=self.write_radius_widget.value,
+            ),
         )
 
-    def _set_config(self, config: ExtractionConfig) -> None:
-        """Apply configuration to widget state."""
-        self.extract_branches_widget.value = config.branches
-        self.extract_branch_text_widget.value = config.branch_text
-        self.extract_summary_widget.value = config.summary
-        self.include_fractal_widget.value = config.fractal_dimension
+    def _set_pipeline_config(self, config: PipelineConfig) -> None:
+        e = config.extraction
+        self.extract_branches_widget.value = e.branches
+        self.extract_branch_text_widget.value = e.branch_text
+        self.extract_summary_widget.value = e.summary
+        self.include_fractal_widget.value = e.fractal_dimension
+        self.include_vessel_radius_widget.value = e.vessel_radius
+
+        o = config.output
+        self.write_skeleton_npy_widget.value = o.write_skeleton_npy
+        self.write_skeleton_png_widget.value = o.write_skeleton_png
+        self.write_summary_csv_widget.value = o.write_summary_csv
+        self.write_branch_csv_widget.value = o.write_branch_csv
+        self.write_radius_widget.value = o.write_radius
+
+    # ------------------------------------------------------------------
+    # Actions
+    # ------------------------------------------------------------------
 
     def _on_load_config(self) -> None:
         """Load configuration from file."""
         try:
             config_path, _ = QFileDialog.getOpenFileName(
                 None,
-                "Load Extraction Configuration",
+                "Load Pipeline Configuration",
                 "",
                 self._CONFIG_FILTER,
             )
@@ -139,7 +221,7 @@ class VesselAnalysisWidget(Container):
                 return
 
             pipeline_config = load_pipeline_config(Path(config_path))
-            self._set_config(pipeline_config.extraction)
+            self._set_pipeline_config(pipeline_config)
             show_info("Configuration loaded")
         except (ValueError, OSError) as e:
             show_error(f"Failed to load config: {e}")
@@ -147,11 +229,10 @@ class VesselAnalysisWidget(Container):
     def _on_save_config(self) -> None:
         """Save current configuration to file."""
         try:
-            config = self._get_current_config()
-            pipeline_config = PipelineConfig(extraction=config, output=OutputConfig())
+            pipeline_config = self._get_current_pipeline_config()
             config_path, _ = QFileDialog.getSaveFileName(
                 None,
-                "Save Extraction Configuration",
+                "Save Pipeline Configuration",
                 "",
                 self._CONFIG_FILTER,
             )
@@ -172,8 +253,7 @@ class VesselAnalysisWidget(Container):
 
         try:
             t0 = time.perf_counter()
-            config = self._get_current_config()
-            pipeline_config = PipelineConfig(extraction=config, output=OutputConfig())
+            pipeline_config = self._get_current_pipeline_config()
             result = analyze_binary_image(
                 image=img.data, base_name=img.name, config=pipeline_config
             )
@@ -187,7 +267,11 @@ class VesselAnalysisWidget(Container):
 
             # Always add skeleton layer first.
             self.viewer.add_layer(
-                Layer.create(result.skeleton, {"name": f"{img.name}_skeleton"}, "labels")
+                Layer.create(
+                    result.skeleton,
+                    {"name": f"{img.name}_skeleton"},
+                    "labels",
+                )
             )
 
             for data, meta, layer_type in result.layers:
@@ -196,7 +280,7 @@ class VesselAnalysisWidget(Container):
                     self.viewer.add_layer(layer)
                 except Exception as e:
                     show_info(
-                        f"Failed to add layer {meta.get('name', '<unnamed>')}: {e}"
+                        f"Failed to add layer " f"{meta.get('name', '<unnamed>')}: {e}"
                     )
         except (ValueError, RuntimeError, OSError) as e:
             show_error(f"Analysis failed: {e}")

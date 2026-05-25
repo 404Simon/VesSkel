@@ -5,7 +5,7 @@ import pytest
 from skan import summarize
 from skimage import data
 
-from vesskel.features import build_vessel_graph, extract_vessel_features
+from vesskel.features import build_vessel_graph, compute_radii, extract_vessel_features
 from vesskel.thin import lee94_thin
 
 from ._helpers import (
@@ -34,7 +34,13 @@ class Test3DThinningRegression:
         skeleton = _compute_skeleton(image)
         graph = build_vessel_graph(skeleton)
         branch_data = summarize(graph, separator="-")
-        features = extract_vessel_features(skeleton, graph, branch_data)
+        _, radius_stats = compute_radii(image, skeleton)
+        features = extract_vessel_features(
+            skeleton,
+            graph,
+            branch_data,
+            radius_stats=radius_stats,
+        )
         name = "brain"
         baseline_file = skeleton_path(name)
         feature_file = feature_path(name)
