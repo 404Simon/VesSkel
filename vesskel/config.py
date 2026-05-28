@@ -3,11 +3,21 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+import sys
+from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Any
 
 CONFIG_SCHEMA_VERSION = 2
+
+
+def _warn_unknown_keys(known: set[str], data: dict[str, Any]) -> None:
+    unknown = set(data) - known
+    if unknown:
+        print(
+            f"Warning: ignored unknown keys: {sorted(unknown)}",
+            file=sys.stderr,
+        )
 
 
 @dataclass
@@ -31,6 +41,7 @@ class ExtractionConfig:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ExtractionConfig:
+        _warn_unknown_keys({f.name for f in fields(cls)}, data)
         return cls(
             branches=data.get("branches", True),
             branch_text=data.get("branch_text", True),
@@ -62,6 +73,7 @@ class OutputConfig:
     @classmethod
     def from_dict(cls, data: dict[str, Any] | None) -> OutputConfig:
         data = data or {}
+        _warn_unknown_keys({f.name for f in fields(cls)}, data)
         return cls(
             write_skeleton_npy=bool(data.get("write_skeleton_npy", True)),
             write_skeleton_png=bool(data.get("write_skeleton_png", False)),
@@ -90,6 +102,8 @@ class PipelineConfig:
     def from_dict(cls, data: dict[str, Any]) -> PipelineConfig:
         if not isinstance(data, dict):
             raise ValueError("Config JSON must be an object")
+
+        _warn_unknown_keys({"schema_version", "extraction", "output"}, data)
 
         schema_version = int(data.get("schema_version", CONFIG_SCHEMA_VERSION))
         if schema_version != CONFIG_SCHEMA_VERSION:
