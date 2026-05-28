@@ -56,6 +56,10 @@ def extract_skeleton_layers(
                 layers.append(text_layer)
 
     if config.summary:
+        if features is None:
+            raise ValueError(
+                "features is required when summary is enabled"
+            )
         summary_layer = _extract_summary_features_layer(
             skeleton,
             base_name,
