@@ -262,7 +262,7 @@ class TestExtractSkeletonLayers:
 
     def test_summary_with_none_features_crashes(self, skeleton, graph, branch_data):
         config = ExtractionConfig(summary=True)
-        with pytest.raises(AttributeError):
+        with pytest.raises(ValueError, match="features is required"):
             extract_skeleton_layers(
                 skeleton,
                 "test",
