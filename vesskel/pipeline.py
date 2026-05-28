@@ -10,7 +10,7 @@ from skan import summarize
 
 from vesskel._utils import to_binary
 from vesskel.config import PipelineConfig
-from vesskel.extraction import extract_skeleton_layers
+from vesskel.napari_layers import extract_skeleton_layers
 from vesskel.features import build_vessel_graph, compute_radii, extract_vessel_features
 from vesskel.thin import lee94_thin
 
