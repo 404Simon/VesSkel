@@ -13,6 +13,7 @@ from vesskel.config import PipelineConfig
 from vesskel.features import (
     build_vessel_graph,
     compute_radii,
+    compute_tortuosity,
     extract_vessel_features,
     per_segment_radii,
 )
@@ -71,6 +72,16 @@ def analyze_binary_image(
         per_seg = per_segment_radii(radius_matrix, graph, len(branch_data))
         for key, arr in per_seg.items():
             branch_data[key] = arr
+
+    if not branch_data.empty:
+        euclidean = branch_data["euclidean-distance"].to_numpy(dtype=float)
+        branch_dist = branch_data["branch-distance"].to_numpy(dtype=float)
+        tortuosity = compute_tortuosity(branch_dist, euclidean)
+        branch_data["tortuosity"] = tortuosity
+        straightness = np.full_like(branch_dist, np.nan, dtype=float)
+        valid = branch_dist > 0
+        straightness[valid] = euclidean[valid] / branch_dist[valid]
+        branch_data["straightness"] = straightness
 
     summary_features: dict[str, float] = {}
     if config.extraction.summary:
