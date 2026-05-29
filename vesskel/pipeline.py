@@ -10,8 +10,13 @@ from skan import summarize
 
 from vesskel._utils import to_binary
 from vesskel.config import PipelineConfig
+from vesskel.features import (
+    build_vessel_graph,
+    compute_radii,
+    extract_vessel_features,
+    per_segment_radii,
+)
 from vesskel.napari_layers import extract_skeleton_layers
-from vesskel.features import build_vessel_graph, compute_radii, extract_vessel_features
 from vesskel.thin import lee94_thin
 
 if TYPE_CHECKING:
@@ -63,6 +68,9 @@ def analyze_binary_image(
     radius_stats = None
     if config.extraction.vessel_radius:
         radius_matrix, radius_stats = compute_radii(binary, skeleton)
+        per_seg = per_segment_radii(radius_matrix, graph, len(branch_data))
+        for key, arr in per_seg.items():
+            branch_data[key] = arr
 
     summary_features: dict[str, float] = {}
     if config.extraction.summary:

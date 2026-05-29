@@ -169,6 +169,58 @@ def compute_radii(
     }
 
 
+def per_segment_radii(
+    radius_matrix: np.ndarray,
+    graph: Skeleton,
+    n_branches: int,
+) -> dict[str, np.ndarray]:
+    """Compute per-segment radius/diameter statistics from an EDT radius matrix.
+
+    Parameters
+    ----------
+    radius_matrix : ndarray
+        Array with radius values at skeleton pixels, zero elsewhere.
+    graph : Skeleton
+        Pre-built skan Skeleton graph.
+    n_branches : int
+        Number of branches (e.g. ``len(branch_data)``).
+
+    Returns
+    -------
+    dict[str, ndarray]
+        Arrays of length ``n_branches`` with keys ``mean_radius``,
+        ``std_radius``, ``min_radius``, ``max_radius``, ``mean_diameter``,
+        ``std_diameter``, ``min_diameter``, ``max_diameter``.
+        Branches with no positive radius values yield ``nan``.
+    """
+    n = n_branches
+    mean_r = np.full(n, np.nan, dtype=np.float64)
+    std_r = np.full(n, np.nan, dtype=np.float64)
+    min_r = np.full(n, np.nan, dtype=np.float64)
+    max_r = np.full(n, np.nan, dtype=np.float64)
+
+    for i in range(n):
+        coords = graph.path_coordinates(i)
+        radii = radius_matrix[tuple(coords.T)]
+        radii = radii[radii > 0]
+        if radii.size:
+            mean_r[i] = np.mean(radii)
+            std_r[i] = np.std(radii)
+            min_r[i] = np.min(radii)
+            max_r[i] = np.max(radii)
+
+    return {
+        "mean_radius": mean_r,
+        "std_radius": std_r,
+        "min_radius": min_r,
+        "max_radius": max_r,
+        "mean_diameter": 2.0 * mean_r,
+        "std_diameter": 2.0 * std_r,
+        "min_diameter": 2.0 * min_r,
+        "max_diameter": 2.0 * max_r,
+    }
+
+
 def build_vessel_graph(skeleton: np.ndarray) -> Skeleton:
     """Build a graph representation from a binary vessel skeleton."""
     return Skeleton(to_binary(skeleton))
