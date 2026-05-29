@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Iterable
 
 import numpy as np
+from argcomplete import autocomplete, shellcode
 from PIL import Image
 
 from vesskel.config import (
@@ -76,6 +77,20 @@ def _parse_args() -> argparse.Namespace:
     )
     validate_parser.add_argument("--config", required=True, help="Config JSON path.")
 
+    completions_parser = subparsers.add_parser(
+        "completions",
+        help="Print shell completion script to stdout.",
+    )
+    completions_parser.add_argument(
+        "shell",
+        choices=("bash", "zsh", "powershell"),
+        help="Target shell.",
+    )
+
+    try:
+        autocomplete(parser)
+    except ImportError:
+        pass
     return parser.parse_args()
 
 
@@ -244,6 +259,12 @@ def _validate_config(args: argparse.Namespace) -> int:
     return 0
 
 
+def _completions(args: argparse.Namespace) -> int:
+
+    print(shellcode(["vesskel"], shell=args.shell))
+    return 0
+
+
 def main() -> int:
     args = _parse_args()
     if args.command == "run":
@@ -252,6 +273,8 @@ def main() -> int:
         return _config_init(args)
     if args.command == "validate-config":
         return _validate_config(args)
+    if args.command == "completions":
+        return _completions(args)
     raise ValueError(f"Unknown command: {args.command}")
 
 

@@ -36,6 +36,21 @@ CLI outputs:
 - Optional per-image skeleton outputs (default: `.npy`)
 - Optional per-image branch tables when `output.write_branch_csv=true`
 
+### Shell completions
+
+```sh
+# zsh
+eval "$(vesskel completions zsh)"
+
+# bash
+eval "$(vesskel completions bash)"
+
+# PowerShell
+vesskel completions powershell | Out-String | Invoke-Expression
+```
+
+Add the appropriate line to your shell rc for persistent tab-completion.
+
 ## Tests
 
 ```sh
