@@ -85,7 +85,7 @@ class TestComputeRadii:
         skeleton[3, 3] = 1
 
         radius_matrix, stats = compute_radii(binary, skeleton)
-        assert stats["mean_radius"] == pytest.approx(3.0)
+        assert stats["mean_radius"] == 3
         assert radius_matrix.shape == binary.shape
         assert stats["mean_diameter"] == stats["mean_radius"] * 2.0
         assert stats["min_diameter"] == stats["min_radius"] * 2.0
@@ -155,8 +155,8 @@ class TestExtractVesselFeatures:
         )
 
     def test_cross_shape_topology(self, cross_features):
-        assert cross_features["num_endpoints"] == pytest.approx(4.0)
-        assert cross_features["num_bifurcations"] == pytest.approx(1.0)
+        assert cross_features["num_endpoints"] == 4
+        assert cross_features["num_bifurcations"] == 1
 
     def test_all_keys_present(self, cross_features):
         assert set(cross_features.keys()) == set(_EMPTY_FEATURES.keys())
@@ -218,8 +218,8 @@ class TestExtractVesselFeatures:
         features = extract_vessel_features(
             img, graph, branch_data, binary=img, include_fractal=False
         )
-        assert features["num_nodes"] == pytest.approx(2.0)
-        assert features["num_endpoints"] == pytest.approx(2.0)
+        assert features["num_nodes"] == 2.0
+        assert features["num_endpoints"] == 2.0
         assert features["total_length"] > 0
 
     def test_empty_branch_data_returns_zeroes(
@@ -241,7 +241,7 @@ class TestExtractVesselFeatures:
             img, graph, branch_data, binary=img, include_fractal=False
         )
         expected_hgu = features["total_length"] / features["num_endpoints"]
-        assert features["hgu"] == pytest.approx(expected_hgu)
+        assert features["hgu"] == expected_hgu
 
     def test_length_statistics_are_consistent(self, cross_features):
         assert (
@@ -259,7 +259,8 @@ class TestExtractVesselFeatures:
             simple_cross_branch_data,
             binary=simple_cross,
         )
-        assert features["vessel_area"] == float(np.count_nonzero(simple_cross))
-        assert features["vessel_area_fraction"] == pytest.approx(
-            np.count_nonzero(simple_cross) / simple_cross.size
+        assert features["vessel_area"] == np.count_nonzero(simple_cross)
+        assert (
+            features["vessel_area_fraction"]
+            == np.count_nonzero(simple_cross) / simple_cross.size
         )
