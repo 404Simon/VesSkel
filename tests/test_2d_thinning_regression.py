@@ -58,6 +58,7 @@ class TestThinningRegression:
             skeleton,
             graph,
             branch_data,
+            binary=binary,
             radius_stats=radius_stats,
         )
         baseline_file = skeleton_path(name)

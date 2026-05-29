@@ -89,6 +89,7 @@ def analyze_binary_image(
             skeleton,
             graph,
             branch_data,
+            binary=binary,
             include_fractal=config.extraction.fractal_dimension,
             radius_stats=radius_stats,
         )

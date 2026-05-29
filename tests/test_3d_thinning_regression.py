@@ -39,6 +39,7 @@ class Test3DThinningRegression:
             skeleton,
             graph,
             branch_data,
+            binary=image,
             radius_stats=radius_stats,
         )
         name = "brain"

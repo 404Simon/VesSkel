@@ -15,7 +15,9 @@ def _make_2d_cross_skeleton() -> np.ndarray:
 
 
 def _features_for(skeleton, graph, branch_data):
-    return extract_vessel_features(skeleton, graph, branch_data, include_fractal=False)
+    return extract_vessel_features(
+        skeleton, graph, branch_data, binary=skeleton, include_fractal=False
+    )
 
 
 class TestExtractSkeletonLayers:

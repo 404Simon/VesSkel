@@ -148,7 +148,10 @@ class TestExtractVesselFeatures:
         self, simple_cross, simple_cross_graph, simple_cross_branch_data
     ):
         return extract_vessel_features(
-            simple_cross, simple_cross_graph, simple_cross_branch_data
+            simple_cross,
+            simple_cross_graph,
+            simple_cross_branch_data,
+            binary=simple_cross,
         )
 
     def test_cross_shape_topology(self, cross_features):
@@ -174,6 +177,7 @@ class TestExtractVesselFeatures:
             simple_cross,
             simple_cross_graph,
             simple_cross_branch_data,
+            binary=simple_cross,
             include_fractal=include_fractal,
         )
         if include_fractal:
@@ -200,6 +204,7 @@ class TestExtractVesselFeatures:
             simple_cross,
             simple_cross_graph,
             simple_cross_branch_data,
+            binary=simple_cross,
             radius_stats=radius_stats,
         )
         assert features["mean_radius"] == 3.5
@@ -211,7 +216,7 @@ class TestExtractVesselFeatures:
         graph = build_vessel_graph(img)
         branch_data = summarize(graph, separator="-")
         features = extract_vessel_features(
-            img, graph, branch_data, include_fractal=False
+            img, graph, branch_data, binary=img, include_fractal=False
         )
         assert features["num_nodes"] == pytest.approx(2.0)
         assert features["num_endpoints"] == pytest.approx(2.0)
@@ -221,7 +226,9 @@ class TestExtractVesselFeatures:
         self, simple_cross, simple_cross_graph, simple_cross_branch_data
     ):
         empty_data = simple_cross_branch_data.iloc[0:0]
-        features = extract_vessel_features(simple_cross, simple_cross_graph, empty_data)
+        features = extract_vessel_features(
+            simple_cross, simple_cross_graph, empty_data, binary=simple_cross
+        )
         for v in features.values():
             assert v == 0.0
 
@@ -231,7 +238,7 @@ class TestExtractVesselFeatures:
         graph = build_vessel_graph(img)
         branch_data = summarize(graph, separator="-")
         features = extract_vessel_features(
-            img, graph, branch_data, include_fractal=False
+            img, graph, branch_data, binary=img, include_fractal=False
         )
         expected_hgu = features["total_length"] / features["num_endpoints"]
         assert features["hgu"] == pytest.approx(expected_hgu)
@@ -241,4 +248,18 @@ class TestExtractVesselFeatures:
             cross_features["min_length"]
             <= cross_features["mean_length"]
             <= cross_features["max_length"]
+        )
+
+    def test_vessel_area_from_binary(
+        self, simple_cross, simple_cross_graph, simple_cross_branch_data
+    ):
+        features = extract_vessel_features(
+            simple_cross,
+            simple_cross_graph,
+            simple_cross_branch_data,
+            binary=simple_cross,
+        )
+        assert features["vessel_area"] == float(np.count_nonzero(simple_cross))
+        assert features["vessel_area_fraction"] == pytest.approx(
+            np.count_nonzero(simple_cross) / simple_cross.size
         )

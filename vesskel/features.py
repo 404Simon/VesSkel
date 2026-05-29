@@ -252,6 +252,8 @@ _EMPTY_FEATURES: dict[str, float] = {
     "std_diameter": 0.0,
     "min_diameter": 0.0,
     "max_diameter": 0.0,
+    "vessel_area": 0.0,
+    "vessel_area_fraction": 0.0,
 }
 
 
@@ -260,6 +262,7 @@ def extract_vessel_features(
     graph: Skeleton,
     branch_data,
     *,
+    binary: np.ndarray,
     include_fractal: bool = True,
     radius_stats: dict[str, float] | None = None,
 ) -> dict[str, float]:
@@ -274,6 +277,9 @@ def extract_vessel_features(
         Pre-built skan Skeleton graph (e.g. from `build_vessel_graph`).
     branch_data : DataFrame
         Pre-computed branch summary (e.g. from `skan.summarize(graph, ...)`).
+    binary : ndarray
+        Original binary mask. Used to compute ``vessel_area`` and
+        ``vessel_area_fraction``.
     include_fractal : bool, optional
         Whether to compute fractal dimension (expensive-ish). Default is True.
     radius_stats : dict[str, float], optional
@@ -282,6 +288,9 @@ def extract_vessel_features(
     """
     if branch_data.empty:
         return dict(_EMPTY_FEATURES)
+
+    vessel_area = float(np.count_nonzero(binary))
+    vessel_area_fraction = vessel_area / float(binary.size)
 
     fd, fd_r2 = fractal_dimension(skeleton) if include_fractal else (0.0, 0.0)
 
@@ -378,5 +387,7 @@ def extract_vessel_features(
         "fractal_dimension": fd,
         "fractal_dimension_r2": fd_r2,
         "hgu": hgu,
+        "vessel_area": vessel_area,
+        "vessel_area_fraction": vessel_area_fraction,
         **radius,
     }
