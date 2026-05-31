@@ -6,20 +6,10 @@ import argparse
 import csv
 import glob
 import json
+import os
+import sys
 from pathlib import Path
 from typing import Iterable
-
-import numpy as np
-from argcomplete import autocomplete, shellcode
-from PIL import Image
-
-from vesskel.config import (
-    ExtractionConfig,
-    OutputConfig,
-    PipelineConfig,
-    load_pipeline_config,
-)
-from vesskel.pipeline import analyze_binary_image
 
 _SUPPORTED_EXTENSIONS = {
     ".png",
@@ -32,7 +22,7 @@ _SUPPORTED_EXTENSIONS = {
 }
 
 
-def _parse_args() -> argparse.Namespace:
+def _make_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="vesskel",
         description="VesSkel CLI for batch-vessel-analysis.",
@@ -87,7 +77,37 @@ def _parse_args() -> argparse.Namespace:
         help="Target shell.",
     )
 
+    return parser
+
+
+# intercept shell completion requests early, before heavy imports
+if "_ARGCOMPLETE" in os.environ:
     try:
+        from argcomplete import autocomplete
+
+        autocomplete(_make_parser())
+    except ImportError:
+        pass
+    sys.exit(0)
+
+
+import numpy as np
+from PIL import Image
+
+from vesskel.config import (
+    ExtractionConfig,
+    OutputConfig,
+    PipelineConfig,
+    load_pipeline_config,
+)
+from vesskel.pipeline import analyze_binary_image
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = _make_parser()
+    try:
+        from argcomplete import autocomplete
+
         autocomplete(parser)
     except ImportError:
         pass
@@ -260,6 +280,7 @@ def _validate_config(args: argparse.Namespace) -> int:
 
 
 def _completions(args: argparse.Namespace) -> int:
+    from argcomplete import shellcode
 
     print(shellcode(["vesskel"], shell=args.shell))
     return 0
