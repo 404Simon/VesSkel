@@ -8,6 +8,7 @@ import glob
 import json
 import os
 import sys
+from importlib.metadata import version
 from pathlib import Path
 from typing import Iterable
 
@@ -26,6 +27,11 @@ def _make_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="vesskel",
         description="VesSkel CLI for batch-vessel-analysis.",
+    )
+    parser.add_argument(
+        "--version", "-v",
+        action="version",
+        version=f"vesskel {version('vesskel')}",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 

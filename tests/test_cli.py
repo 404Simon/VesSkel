@@ -328,6 +328,30 @@ class TestMainCommands:
         assert exit_code == 0
         assert (tmp_path / "cfg.json").exists()
 
+    def test_version_flag(self, capsys, monkeypatch):
+        import sys
+
+        from vesskel.cli import main
+
+        monkeypatch.setattr(sys, "argv", ["vesskel", "--version"])
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code == 0
+        captured = capsys.readouterr()
+        assert "vesskel" in captured.out
+
+    def test_version_short_flag(self, capsys, monkeypatch):
+        import sys
+
+        from vesskel.cli import main
+
+        monkeypatch.setattr(sys, "argv", ["vesskel", "-v"])
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code == 0
+        captured = capsys.readouterr()
+        assert "vesskel" in captured.out
+
     def test_main_dispatch_validate_config(self, tmp_path, monkeypatch):
         import sys
 
