@@ -29,7 +29,8 @@ def _make_parser() -> argparse.ArgumentParser:
         description="VesSkel CLI for batch-vessel-analysis.",
     )
     parser.add_argument(
-        "--version", "-v",
+        "--version",
+        "-v",
         action="version",
         version=f"vesskel {version('vesskel')}",
     )
@@ -87,13 +88,22 @@ def _make_parser() -> argparse.ArgumentParser:
 
 
 # intercept shell completion requests early, before heavy imports
-if "_ARGCOMPLETE" in os.environ:
-    try:
-        from argcomplete import autocomplete
+if "_ARGCOMPLETE" in os.environ or (len(sys.argv) > 1 and sys.argv[1] == "completions"):
+    if "_ARGCOMPLETE" in os.environ:
+        try:
+            from argcomplete import autocomplete
 
-        autocomplete(_make_parser())
-    except ImportError:
-        pass
+            autocomplete(_make_parser())
+        except ImportError:
+            pass
+    else:
+        try:
+            from argcomplete import shellcode
+
+            shell = sys.argv[2] if len(sys.argv) > 2 else "zsh"
+            print(shellcode(["vesskel"], shell=shell))
+        except ImportError:
+            pass
     sys.exit(0)
 
 
