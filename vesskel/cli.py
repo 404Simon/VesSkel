@@ -3,24 +3,21 @@
 from __future__ import annotations
 
 import argparse
-import csv
 import glob
 import json
 import os
 import sys
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from importlib.metadata import version
 from pathlib import Path
-from typing import Iterable
 
-_SUPPORTED_EXTENSIONS = {
-    ".png",
-    ".jpg",
-    ".jpeg",
-    ".tif",
-    ".tiff",
-    ".bmp",
-    ".npy",
-}
+from vesskel._batch import _SUPPORTED_EXTENSIONS, _write_csv, process_one
+from vesskel.config import (
+    ExtractionConfig,
+    OutputConfig,
+    PipelineConfig,
+    load_pipeline_config,
+)
 
 
 def _make_parser() -> argparse.ArgumentParser:
@@ -61,6 +58,13 @@ def _make_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Recursively search directories for supported image files.",
     )
+    run_parser.add_argument(
+        "--jobs",
+        "-j",
+        type=int,
+        default=os.cpu_count() or 1,
+        help="Number of parallel workers (0 = all CPU cores).",
+    )
 
     init_parser = subparsers.add_parser(
         "config-init",
@@ -70,7 +74,7 @@ def _make_parser() -> argparse.ArgumentParser:
 
     validate_parser = subparsers.add_parser(
         "validate-config",
-        help="Validate and print normalized config JSON.",
+        help="Validate and print a normalised config JSON.",
     )
     validate_parser.add_argument("--config", required=True, help="Config JSON path.")
 
@@ -105,18 +109,6 @@ if "_ARGCOMPLETE" in os.environ or (len(sys.argv) > 1 and sys.argv[1] == "comple
         except ImportError:
             pass
     sys.exit(0)
-
-
-import numpy as np
-from PIL import Image
-
-from vesskel.config import (
-    ExtractionConfig,
-    OutputConfig,
-    PipelineConfig,
-    load_pipeline_config,
-)
-from vesskel.pipeline import analyze_binary_image
 
 
 def _parse_args() -> argparse.Namespace:
@@ -154,63 +146,15 @@ def _discover_input_paths(inputs: list[str], recursive: bool) -> list[Path]:
     return sorted(paths)
 
 
-def _load_image(path: Path) -> np.ndarray:
-    if path.suffix.lower() == ".npy":
-        arr = np.load(path)
-    else:
-        with Image.open(path) as im:
-            arr = np.asarray(im)
-
-    if arr.ndim == 0:
-        raise ValueError("Scalar input is not supported")
-
-    # If image has channels, collapse to single binary mask
-    if arr.ndim == 3 and arr.shape[-1] in (3, 4):
-        arr = np.max(arr[..., :3], axis=-1)
-
-    if arr.ndim not in (2, 3):
-        raise ValueError(f"Expected 2D or 3D image, got shape={arr.shape}")
-
-    return arr
-
-
-def _sanitize_for_csv(value: object) -> object:
-    if isinstance(value, (np.generic,)):
-        return value.item()
-    return value
-
-
-def _write_csv(path: Path, rows: Iterable[dict[str, object]]) -> None:
-    rows = list(rows)
-    if not rows:
-        return
-
-    fieldnames = sorted({key for row in rows for key in row.keys()})
-    with path.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        for row in rows:
-            writer.writerow({k: _sanitize_for_csv(v) for k, v in row.items()})
-
-
-def _save_skeleton(
-    path: Path,
-    skeleton: np.ndarray,
-    *,
-    npy: bool = True,
-    png: bool = False,
-) -> None:
-    if npy:
-        np.save(path.with_suffix(".npy"), skeleton.astype(np.uint8))
-    if png:
-        if skeleton.ndim != 2:
-            raise ValueError("PNG skeleton output is only supported for 2D images")
-        img = Image.fromarray((skeleton > 0).astype(np.uint8) * 255)
-        img.save(path.with_suffix(".png"))
-
-
-def _save_radius(path: Path, radius_matrix: np.ndarray) -> None:
-    np.save(path.with_suffix(".npy"), radius_matrix.astype(np.float64))
+def _compute_safe_names(input_paths: list[Path]) -> list[str]:
+    name_counts: dict[str, int] = {}
+    safe_names: list[str] = []
+    for p in input_paths:
+        base = p.stem
+        seen = name_counts.get(base, 0)
+        name_counts[base] = seen + 1
+        safe_names.append(base if seen == 0 else f"{base}_{seen + 1}")
+    return safe_names
 
 
 def _run_batch(args: argparse.Namespace) -> int:
@@ -222,48 +166,21 @@ def _run_batch(args: argparse.Namespace) -> int:
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    summary_rows: list[dict[str, object]] = []
-    output_name_counts: dict[str, int] = {}
+    safe_names = _compute_safe_names(input_paths)
+    jobs = os.cpu_count() or 1 if args.jobs == 0 else args.jobs
     total = len(input_paths)
 
-    for idx, in_path in enumerate(input_paths, 1):
-        print(f"[{idx}/{total}] {in_path.name}", flush=True)
-
-        image = _load_image(in_path)
-        result = analyze_binary_image(
-            image=image, base_name=in_path.stem, config=config
+    if jobs == 1:
+        summary_rows = []
+        for idx, (in_path, safe_name) in enumerate(zip(input_paths, safe_names), 1):
+            print(f"[{idx}/{total}] {in_path.name}", flush=True)
+            summary_rows.append(process_one(in_path, safe_name, out_dir, config))
+    else:
+        summary_rows = _run_parallel(
+            input_paths, safe_names, out_dir, config, jobs, total
         )
 
-        base_key = in_path.stem
-        seen = output_name_counts.get(base_key, 0)
-        output_name_counts[base_key] = seen + 1
-        safe_name = base_key if seen == 0 else f"{base_key}_{seen + 1}"
-
-        image_out_dir = out_dir / safe_name
-        image_out_dir.mkdir(parents=True, exist_ok=True)
-
-        if config.output.write_skeleton_npy or config.output.write_skeleton_png:
-            _save_skeleton(
-                path=image_out_dir / f"{safe_name}_skeleton",
-                skeleton=result.skeleton,
-                npy=config.output.write_skeleton_npy,
-                png=config.output.write_skeleton_png,
-            )
-
-        if config.output.write_radius and result.radius_matrix is not None:
-            _save_radius(
-                image_out_dir / f"{safe_name}_radius",
-                result.radius_matrix,
-            )
-
-        if config.output.write_branch_csv and result.branch_records:
-            _write_csv(
-                image_out_dir / f"{safe_name}_branches.csv",
-                result.branch_records,
-            )
-
-        summary_row = {"image": in_path.name, **result.summary_features}
-        summary_rows.append(summary_row)
+    summary_rows.sort(key=lambda r: str(r.get("image", "")))
 
     if config.output.write_summary_csv:
         _write_csv(out_dir / "summary.csv", summary_rows)
@@ -273,6 +190,40 @@ def _run_batch(args: argparse.Namespace) -> int:
         f"Outputs written to '{out_dir}'."
     )
     return 0
+
+
+def _run_parallel(
+    input_paths: list[Path],
+    safe_names: list[str],
+    out_dir: Path,
+    config: PipelineConfig,
+    jobs: int,
+    total: int,
+) -> list[dict[str, object]]:
+    import multiprocessing as mp
+
+    summary_rows: list[dict[str, object]] = []
+    ctx = mp.get_context("spawn")
+
+    with ProcessPoolExecutor(max_workers=jobs, mp_context=ctx) as ex:
+        futures = {
+            ex.submit(process_one, p, sn, out_dir, config): (idx, p.name)
+            for idx, (p, sn) in enumerate(zip(input_paths, safe_names), 1)
+        }
+
+        for fut in as_completed(futures):
+            idx, name = futures[fut]
+            try:
+                summary_rows.append(fut.result())
+                print(f"[{idx}/{total}] {name}", flush=True)
+            except Exception as exc:
+                print(
+                    f"[{idx}/{total}] {name} FAILED: {exc}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+
+    return summary_rows
 
 
 def _config_init(args: argparse.Namespace) -> int:
