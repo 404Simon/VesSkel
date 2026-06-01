@@ -364,6 +364,106 @@ class TestMainCommands:
         with pytest.raises(ValueError, match="No input files found"):
             _run_batch(args)
 
+    def test_run_batch_parallel_multiple_images(self, tmp_path):
+        from vesskel.cli import _run_batch
+
+        img_path = tmp_path / "input"
+        img_path.mkdir()
+        for name in ("a", "b"):
+            image = np.zeros((16, 16), dtype=np.uint8)
+            image[8, 4:12] = 1
+            image[4:12, 8] = 1
+            Image.fromarray(image * 255).save(img_path / f"{name}.png")
+
+        config_path = tmp_path / "pipeline.json"
+        config = PipelineConfig.from_dict(
+            {"schema_version": CONFIG_SCHEMA_VERSION, "extraction": {}, "output": {}}
+        )
+        config_path.write_text(json.dumps(config.to_dict(), indent=2))
+
+        out_dir = tmp_path / "output"
+
+        args = _make_args(
+            input=[str(img_path)],
+            config=str(config_path),
+            out=str(out_dir),
+            recursive=False,
+            jobs=2,
+        )
+
+        exit_code = _run_batch(args)
+        assert exit_code == 0
+        assert (out_dir / "a").is_dir()
+        assert (out_dir / "b").is_dir()
+        assert (out_dir / "a" / "a_skeleton.npy").exists()
+        assert (out_dir / "b" / "b_skeleton.npy").exists()
+        assert (out_dir / "summary.csv").exists()
+
+        with open(out_dir / "summary.csv") as f:
+            reader = csv.DictReader(f)
+            data = list(reader)
+        assert len(data) == 2
+
+    def test_run_batch_parallel_failure_raises(self, tmp_path):
+        from vesskel.cli import _run_batch
+
+        img_path = tmp_path / "input"
+        img_path.mkdir()
+        image = np.zeros((16, 16), dtype=np.uint8)
+        image[8, 4:12] = 1
+        image[4:12, 8] = 1
+        Image.fromarray(image * 255).save(img_path / "good.png")
+        np.save(img_path / "bad.npy", np.zeros((2, 2, 2, 2), dtype=np.uint8))
+
+        config_path = tmp_path / "pipeline.json"
+        config = PipelineConfig.from_dict(
+            {"schema_version": CONFIG_SCHEMA_VERSION, "extraction": {}, "output": {}}
+        )
+        config_path.write_text(json.dumps(config.to_dict(), indent=2))
+
+        out_dir = tmp_path / "output"
+
+        args = _make_args(
+            input=[str(img_path)],
+            config=str(config_path),
+            out=str(out_dir),
+            recursive=False,
+            jobs=2,
+        )
+
+        with pytest.raises(RuntimeError, match=r"image\(s\) failed"):
+            _run_batch(args)
+
+    def test_run_batch_jobs_zero_auto_detect(self, tmp_path):
+        from vesskel.cli import _run_batch
+
+        img_path = tmp_path / "input"
+        img_path.mkdir()
+        image = np.zeros((16, 16), dtype=np.uint8)
+        image[8, 4:12] = 1
+        image[4:12, 8] = 1
+        Image.fromarray(image * 255).save(img_path / "cross.png")
+
+        config_path = tmp_path / "pipeline.json"
+        config = PipelineConfig.from_dict(
+            {"schema_version": CONFIG_SCHEMA_VERSION, "extraction": {}, "output": {}}
+        )
+        config_path.write_text(json.dumps(config.to_dict(), indent=2))
+
+        out_dir = tmp_path / "output"
+
+        args = _make_args(
+            input=[str(img_path)],
+            config=str(config_path),
+            out=str(out_dir),
+            recursive=False,
+            jobs=0,
+        )
+
+        exit_code = _run_batch(args)
+        assert exit_code == 0
+        assert (out_dir / "cross" / "cross_skeleton.npy").exists()
+
     def test_main_dispatch_config_init(self, tmp_path, monkeypatch):
         import sys
 
