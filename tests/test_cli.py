@@ -16,6 +16,52 @@ from vesskel.cli import (
 )
 from vesskel.config import CONFIG_SCHEMA_VERSION, PipelineConfig
 
+HEAVY_MODULES = frozenset(
+    {"numpy", "PIL", "PIL.Image", "vesskel.pipeline", "vesskel._batch"}
+)
+
+
+class TestCompletionSpeed:
+    """Shell completions must exit before importing heavy modules (numpy/PIL)."""
+
+    def test_completions_skip_heavy_imports(self):
+        import subprocess
+        import sys
+
+        heavy_modules = sorted(HEAVY_MODULES)
+        probe = f"""
+import os, sys
+
+def _fake_exit(code=0):
+    raise SystemExit(code)
+os._exit = _fake_exit
+
+os.environ["_ARGCOMPLETE"] = "1"
+sys.argv = ["vesskel", "complete", "zsh"]
+
+try:
+    import vesskel.cli
+except SystemExit:
+    pass
+
+heavy = [m for m in {heavy_modules!r} if m in sys.modules]
+if heavy:
+    sys.stdout.write("HEAVY:" + ",".join(heavy))
+"""
+        result = subprocess.run(
+            [sys.executable, "-c", probe],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        assert result.returncode == 0, f"Subprocess failed (stderr): {result.stderr}"
+        assert (
+            "HEAVY:" not in result.stdout
+        ), f"Heavy modules loaded during completions: {result.stdout}"
+        assert (
+            "HEAVY:" not in result.stderr
+        ), f"Heavy modules leaked to stderr: {result.stderr}"
+
 
 class TestDiscoverInputPaths:
     def test_single_png_file(self, tmp_path):
