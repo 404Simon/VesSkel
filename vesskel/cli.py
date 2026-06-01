@@ -213,6 +213,7 @@ def _run_parallel(
     from vesskel._batch import process_one
 
     summary_rows: list[dict[str, object]] = []
+    errors: list[tuple[int, str, Exception]] = []
     ctx = mp.get_context("spawn")
 
     with ProcessPoolExecutor(max_workers=jobs, mp_context=ctx) as ex:
@@ -232,6 +233,13 @@ def _run_parallel(
                     file=sys.stderr,
                     flush=True,
                 )
+                errors.append((idx, name, exc))
+
+    if errors:
+        failures = "\n".join(
+            f"  [{idx}/{total}] {name}: {exc}" for idx, name, exc in errors
+        )
+        raise RuntimeError(f"{len(errors)}/{total} image(s) failed:\n{failures}")
 
     return summary_rows
 
