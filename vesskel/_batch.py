@@ -10,11 +10,7 @@ import numpy as np
 from PIL import Image
 
 from vesskel.config import PipelineConfig
-from vesskel.pipeline import AnalysisResult, analyze_binary_image
-
-_SUPPORTED_EXTENSIONS = frozenset(
-    {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".npy"}
-)
+from vesskel.pipeline import analyze_binary_image
 
 
 def _load_image(path: Path) -> np.ndarray:
