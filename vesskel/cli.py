@@ -7,11 +7,9 @@ import glob
 import json
 import os
 import sys
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from importlib.metadata import version
 from pathlib import Path
 
-from vesskel._batch import _SUPPORTED_EXTENSIONS, _write_csv, process_one
 from vesskel.config import (
     ExtractionConfig,
     OutputConfig,
@@ -91,7 +89,9 @@ def _make_parser() -> argparse.ArgumentParser:
     return parser
 
 
-# intercept shell completion requests early, before heavy imports
+# WARNING: keep this guard and everything above it free of heavy imports (numpy, PIL, vesskel.pipeline, vesskel._batch).
+# The guard lets shell completions exit in 81 ms instead of 800 ms.
+# Tests in tests/test_cli.py::TestCompletionSpeed enforce this.
 if "_ARGCOMPLETE" in os.environ or (len(sys.argv) > 1 and sys.argv[1] == "completions"):
     if "_ARGCOMPLETE" in os.environ:
         try:
@@ -109,6 +109,11 @@ if "_ARGCOMPLETE" in os.environ or (len(sys.argv) > 1 and sys.argv[1] == "comple
         except ImportError:
             pass
     sys.exit(0)
+
+
+_SUPPORTED_EXTENSIONS = frozenset(
+    {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".npy"}
+)
 
 
 def _parse_args() -> argparse.Namespace:
@@ -158,6 +163,8 @@ def _compute_safe_names(input_paths: list[Path]) -> list[str]:
 
 
 def _run_batch(args: argparse.Namespace) -> int:
+    from vesskel._batch import _write_csv, process_one
+
     config = load_pipeline_config(Path(args.config))
     input_paths = _discover_input_paths(args.input, recursive=args.recursive)
     if not input_paths:
@@ -201,6 +208,9 @@ def _run_parallel(
     total: int,
 ) -> list[dict[str, object]]:
     import multiprocessing as mp
+    from concurrent.futures import ProcessPoolExecutor, as_completed
+
+    from vesskel._batch import process_one
 
     summary_rows: list[dict[str, object]] = []
     ctx = mp.get_context("spawn")
