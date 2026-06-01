@@ -174,7 +174,7 @@ def _run_batch(args: argparse.Namespace) -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     safe_names = _compute_safe_names(input_paths)
-    jobs = os.cpu_count() or 1 if args.jobs == 0 else args.jobs
+    jobs = (os.cpu_count() or 1) if args.jobs == 0 else args.jobs
     total = len(input_paths)
 
     if jobs == 1:
