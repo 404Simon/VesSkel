@@ -175,6 +175,8 @@ def _run_batch(args: argparse.Namespace) -> int:
 
     safe_names = _compute_safe_names(input_paths)
     jobs = (os.cpu_count() or 1) if args.jobs == 0 else args.jobs
+    if jobs < 1:
+        raise ValueError("--jobs must be 0 (auto) or a positive integer")
     total = len(input_paths)
 
     if jobs == 1:
