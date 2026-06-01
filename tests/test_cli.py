@@ -6,14 +6,14 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from vesskel.cli import (
-    _discover_input_paths,
+from vesskel._batch import (
     _load_image,
     _sanitize_for_csv,
     _save_radius,
     _save_skeleton,
     _write_csv,
 )
+from vesskel.cli import _discover_input_paths
 from vesskel.config import CONFIG_SCHEMA_VERSION, PipelineConfig
 
 HEAVY_MODULES = frozenset(
@@ -331,6 +331,7 @@ class TestMainCommands:
             config=str(config_path),
             out=str(out_dir),
             recursive=False,
+            jobs=1,
         )
 
         exit_code = _run_batch(args)
@@ -357,6 +358,7 @@ class TestMainCommands:
             config=str(config_path),
             out=str(tmp_path / "out"),
             recursive=False,
+            jobs=1,
         )
 
         with pytest.raises(ValueError, match="No input files found"):
