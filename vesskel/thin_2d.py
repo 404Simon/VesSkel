@@ -29,6 +29,48 @@ _NEIGHBORS = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 
 _BORDERS = ((-1, 0), (1, 0), (0, 1), (0, -1))  # N, S, E, W
 
 
+def _build_simple_lut():
+    lut = np.zeros(256, dtype=np.bool_)
+    nr = np.empty(8, dtype=np.int64)
+    nc = np.empty(8, dtype=np.int64)
+    visited = np.empty(8, dtype=np.bool_)
+    stack = np.empty(8, dtype=np.int64)
+    for pattern in range(256):
+        fg_idx = [i for i in range(8) if (pattern >> i) & 1]
+        n = len(fg_idx)
+        if n == 0:
+            continue
+        for j in range(n):
+            nr[j] = _NEIGHBORS[fg_idx[j]][0]
+            nc[j] = _NEIGHBORS[fg_idx[j]][1]
+        visited[:n] = False
+        components = 0
+        for start in range(n):
+            if visited[start]:
+                continue
+            components += 1
+            sp = 0
+            stack[sp] = start
+            sp += 1
+            visited[start] = True
+            while sp > 0:
+                sp -= 1
+                ci = stack[sp]
+                cr, cc = nr[ci], nc[ci]
+                for ni in range(n):
+                    if visited[ni]:
+                        continue
+                    if abs(nr[ni] - cr) <= 1 and abs(nc[ni] - cc) <= 1:
+                        visited[ni] = True
+                        stack[sp] = ni
+                        sp += 1
+        lut[pattern] = components == 1
+    return lut
+
+
+_SIMPLE_LUT = _build_simple_lut()
+
+
 @njit(cache=True)
 def _is_endpoint(img, r, c):
     """Check if point is an endpoint (exactly 1 foreground neighbor)."""
@@ -42,62 +84,13 @@ def _is_endpoint(img, r, c):
 
 
 @njit(cache=True)
-def _count_8connected_components(img, r, c):
-    """Count 8-connected components among the 8-neighbors of (r, c).
-
-    Computed via flood-fill DFS over the 8-neighbor foreground pixels.
-    Uses fixed-size arrays instead of Python sets for numba compatibility.
-    """
-    nr_arr = np.empty(8, dtype=np.int64)
-    nc_arr = np.empty(8, dtype=np.int64)
-    is_fg = np.zeros(8, dtype=np.bool_)
-    n = 0
-
+def _is_simple_point(img, r, c):
+    p = np.uint8(0)
     for i in range(8):
         dr, dc = _NEIGHBORS[i]
-        if img[r + dr, c + dc] == 1:
-            nr_arr[n] = r + dr
-            nc_arr[n] = c + dc
-            is_fg[n] = True
-            n += 1
-
-    if n == 0:
-        return 0
-
-    visited = np.zeros(8, dtype=np.bool_)
-    stack = np.empty(8, dtype=np.int64)
-    components = 0
-
-    for start in range(n):
-        if visited[start] or not is_fg[start]:
-            continue
-        components += 1
-        sp = 0
-        stack[sp] = start
-        sp += 1
-        visited[start] = True
-        while sp > 0:
-            sp -= 1
-            ci = stack[sp]
-            cr, cc = nr_arr[ci], nc_arr[ci]
-            for ni in range(n):
-                if not is_fg[ni] or visited[ni]:
-                    continue
-                if abs(nr_arr[ni] - cr) <= 1 and abs(nc_arr[ni] - cc) <= 1:
-                    visited[ni] = True
-                    stack[sp] = ni
-                    sp += 1
-
-    return components
-
-
-@njit(cache=True)
-def _is_simple_point(img, r, c):
-    """Check if removing the point preserves connectivity.
-
-    A point is simple if its 8-neighbors form exactly one 8-connected component.
-    """
-    return _count_8connected_components(img, r, c) == 1
+        if img[r + dr, c + dc]:
+            p |= np.uint8(1 << i)
+    return _SIMPLE_LUT[p]
 
 
 @njit(parallel=True, cache=True)
