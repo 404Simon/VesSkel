@@ -8,6 +8,7 @@ from skimage.morphology import skeletonize
 from vesskel.thin import lee94_thin
 
 
+@pytest.mark.slow
 class TestSkeletonizeComparison:
     """Compare vesskel.thin with scikit-image skeletonize on brain image."""
 

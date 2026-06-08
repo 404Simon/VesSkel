@@ -26,7 +26,6 @@ napari = [
 
 dev = [
     "pytest>=9.0.2",
-    "pytest-xdist>=3.8.0",
     "pooch>=1.9.0",
     "scikit-image>=0.26.0",
 ]
@@ -54,4 +53,4 @@ vesskel = "vesskel:napari.yaml"
 vesskel = "vesskel.cli:main"
 
 [tool.pytest.ini_options]
-addopts = "-n auto"
+markers = ["slow: big regression tests (skip with -m 'not slow')"]

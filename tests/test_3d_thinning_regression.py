@@ -23,6 +23,7 @@ def _compute_skeleton(image: np.ndarray) -> np.ndarray:
     return lee94_thin(image)
 
 
+@pytest.mark.slow
 class Test3DThinningRegression:
     """Run 3D thinning on brain image and compare against saved baselines."""
 

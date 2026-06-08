@@ -39,6 +39,7 @@ def dataset():
     return HRFDataset(HRF_PATH)
 
 
+@pytest.mark.slow
 class TestThinningRegression:
     """Run thinning on every HRF sample and compare against saved baselines."""
 
