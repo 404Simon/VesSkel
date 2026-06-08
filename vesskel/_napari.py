@@ -41,9 +41,9 @@ class VesselAnalysisWidget(Container):
         # ---------- extraction parameters (magicgui) ----------
         def _extraction_params(
             image: "napari.layers.Image",
-            extract_branches: bool = True,
-            extract_branch_text: bool = True,
-            extract_summary: bool = True,
+            extract_branches: bool = False,
+            extract_branch_text: bool = False,
+            extract_summary: bool = False,
             include_fractal: bool = False,
             include_vessel_radius: bool = False,
             junction_cleanup: bool = False,
