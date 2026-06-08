@@ -54,7 +54,8 @@ Add the appropriate line to your shell rc for persistent tab-completion.
 ## Tests
 
 ```sh
-uv sync --extra dev && uv run pytest
+uv sync --extra dev && uv run pytest                     # all tests
+uv sync --extra dev && uv run pytest -m "not slow"       # skip regression tests
 ```
 
 - **2D regression** - thinning + feature extraction on all 45 HRF samples, compared against saved baselines
