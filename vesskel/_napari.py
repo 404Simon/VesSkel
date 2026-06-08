@@ -46,6 +46,8 @@ class VesselAnalysisWidget(Container):
             extract_summary: bool = True,
             include_fractal: bool = False,
             include_vessel_radius: bool = False,
+            junction_cleanup: bool = False,
+            cleanup_threshold_factor: float = 2.5,
         ) -> None:
             return None
 
@@ -56,6 +58,15 @@ class VesselAnalysisWidget(Container):
             extract_branch_text={"annotation": bool, "value": True},
             extract_summary={"annotation": bool, "value": True},
             include_fractal={"annotation": bool, "value": False},
+            junction_cleanup={"annotation": bool, "value": False},
+            cleanup_threshold_factor={
+                "annotation": float,
+                "value": 2.5,
+                "widget_type": "FloatSpinBox",
+                "min": 1.0,
+                "max": 10.0,
+                "step": 0.1,
+            },
         )
 
         # ---------- output parameters (magicgui) ----------
@@ -108,6 +119,15 @@ class VesselAnalysisWidget(Container):
         self.include_vessel_radius_widget.label = "Compute vessel radius and diameter"
 
         advanced_group.append(self.include_vessel_radius_widget)
+
+        self.junction_cleanup_widget = extraction_gui.junction_cleanup
+        self.junction_cleanup_widget.label = "Collapse triangle junction artifacts"
+
+        self.cleanup_threshold_widget = extraction_gui.cleanup_threshold_factor
+        self.cleanup_threshold_widget.label = "Cleanup threshold factor"
+
+        advanced_group.append(self.junction_cleanup_widget)
+        advanced_group.append(self.cleanup_threshold_widget)
 
         # ============================================================
         # Output Settings (CLI file export options)
@@ -172,6 +192,7 @@ class VesselAnalysisWidget(Container):
     # ------------------------------------------------------------------
 
     def _get_current_pipeline_config(self) -> PipelineConfig:
+        junction_cleanup = self.junction_cleanup_widget.value
         return PipelineConfig(
             extraction=ExtractionConfig(
                 branches=self.extract_branches_widget.value,
@@ -179,6 +200,8 @@ class VesselAnalysisWidget(Container):
                 summary=self.extract_summary_widget.value,
                 fractal_dimension=self.include_fractal_widget.value,
                 vessel_radius=self.include_vessel_radius_widget.value,
+                junction_cleanup=junction_cleanup,
+                cleanup_threshold_factor=self.cleanup_threshold_widget.value,
             ),
             output=OutputConfig(
                 write_skeleton_npy=self.write_skeleton_npy_widget.value,
@@ -196,6 +219,8 @@ class VesselAnalysisWidget(Container):
         self.extract_summary_widget.value = e.summary
         self.include_fractal_widget.value = e.fractal_dimension
         self.include_vessel_radius_widget.value = e.vessel_radius
+        self.junction_cleanup_widget.value = e.junction_cleanup
+        self.cleanup_threshold_widget.value = e.cleanup_threshold_factor
 
         o = config.output
         self.write_skeleton_npy_widget.value = o.write_skeleton_npy

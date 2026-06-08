@@ -29,6 +29,8 @@ class ExtractionConfig:
     summary: bool = True
     fractal_dimension: bool = False
     vessel_radius: bool = False
+    junction_cleanup: bool = False
+    cleanup_threshold_factor: float = 2.5
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -37,6 +39,8 @@ class ExtractionConfig:
             "summary": self.summary,
             "fractal_dimension": self.fractal_dimension,
             "vessel_radius": self.vessel_radius,
+            "junction_cleanup": self.junction_cleanup,
+            "cleanup_threshold_factor": self.cleanup_threshold_factor,
         }
 
     @classmethod
@@ -48,6 +52,8 @@ class ExtractionConfig:
             summary=data.get("summary", True),
             fractal_dimension=data.get("fractal_dimension", False),
             vessel_radius=data.get("vessel_radius", False),
+            junction_cleanup=data.get("junction_cleanup", False),
+            cleanup_threshold_factor=data.get("cleanup_threshold_factor", 2.5),
         )
 
 

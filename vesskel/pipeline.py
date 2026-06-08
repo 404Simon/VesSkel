@@ -17,6 +17,7 @@ from vesskel.features import (
     extract_vessel_features,
     per_segment_radii,
 )
+from vesskel.junction_cleanup import collapse_triangle_junctions
 from vesskel.napari_layers import extract_skeleton_layers
 from vesskel.thin import lee94_thin
 
@@ -62,13 +63,27 @@ def analyze_binary_image(
             branch_records=[],
         )
 
-    graph = build_vessel_graph(skeleton)
-    branch_data = summarize(graph, separator="-")
+    # -- optional: collapse triangle junction artifacts -----------------
+    # (requires EDT; done on the original skeleton before graph building)
+    if config.extraction.junction_cleanup:
+        rm_temp, _ = compute_radii(binary, skeleton)
+        skeleton = collapse_triangle_junctions(
+            skeleton,
+            radius_matrix=rm_temp,
+            threshold_factor=config.extraction.cleanup_threshold_factor,
+        )
 
+    # -- optional: vessel radius (EDT on the final skeleton) ------------
     radius_matrix = None
     radius_stats = None
     if config.extraction.vessel_radius:
         radius_matrix, radius_stats = compute_radii(binary, skeleton)
+
+    # -- build graph & branch data on the (potentially cleaned) skeleton -
+    graph = build_vessel_graph(skeleton)
+    branch_data = summarize(graph, separator="-")
+
+    if radius_matrix is not None and not branch_data.empty:
         per_seg = per_segment_radii(radius_matrix, graph, len(branch_data))
         for key, arr in per_seg.items():
             branch_data[key] = arr
