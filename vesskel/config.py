@@ -47,9 +47,9 @@ class ExtractionConfig:
     def from_dict(cls, data: dict[str, Any]) -> ExtractionConfig:
         _warn_unknown_keys({f.name for f in fields(cls)}, data)
         return cls(
-            branches=data.get("branches", True),
-            branch_text=data.get("branch_text", True),
-            summary=data.get("summary", True),
+            branches=data.get("branches", False),
+            branch_text=data.get("branch_text", False),
+            summary=data.get("summary", False),
             fractal_dimension=data.get("fractal_dimension", False),
             vessel_radius=data.get("vessel_radius", False),
             junction_cleanup=data.get("junction_cleanup", False),
