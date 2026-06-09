@@ -1,0 +1,438 @@
+\documentclass[11pt]{article}
+
+\input{preamble} % If needed, you can load additional packages or
+% define your own macros in the preamble.tex file
+
+\title{[Title of thesis or report]}
+\author{[Author name]}
+
+\affil{
+  [Master's / Bachelor's] thesis in [your study degree]\\ % For theses
+  Direct supervisor: [your direct thesis supervisor]\\ % For theses,
+  % delete if directly supervised by David
+  Supervising professor: Prof. Dr. David B. Blumenthal\\ % For theses
+  %Project report\\ % For project reports in the module Project
+  % Biomedical Network Science
+  %Student paper\\ % For student papers in the module Network Medicine
+  %Module title: [either Project Biomedical Network Science or
+  % Network Medicine]\\% For project reports and student papers
+  %Semester: [specify semster during which you attended the
+  % module]\\% For project reports and student papers
+  Matriculation number: [your matriculation number]\\
+  Biomedical Network Science Lab, Department Artificial Intelligence in
+Biomedical Engineering, Friedrich-Alexander-Universität Erlangen-Nürnberg}
+
+\date{Submission date: [date]}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+  Write your abstract here. An abstract is a brief one-paragraph
+  summary that motivates your work, and provides a high-level
+  description of why it is relevant. Excellent guidelines can be
+  found here:
+  \url{https://www.nature.com/documents/nature-summary-paragraph.pdf}.
+  Your abstract should fit on the first page of this document.
+\end{abstract}
+
+\clearpage
+
+\tableofcontents
+
+\clearpage
+
+\section{Introduction}\label{sec:introduction}
+
+This template provides an example of a standard structure that is
+used for many scientific articles. Depending on the content you
+present in your thesis, report, or student paper, it can make sense
+to use this structure or to deviate from it. The only exceptions are
+the sections \Cref{sec:code,sec:data}. These sections are mandatory
+and must be filled according to the provided descriptions. Moreover,
+you must fill-in the AI usage declaration in
+\Cref{sec:ai-declaration} and date and sign the declaration of
+academic integrity in \Cref{sec:declaration}.
+
+In the introduction, you provide the motivation of your work, pose
+your research question, and describe the (medical and technical)
+background as well as the related work (if these parts are rather
+  extensive they can also be put in dedicated ``Background'' and/or
+``Related work'' sections). Make sure that the contribution of
+\emph{your} work becomes clear in the introduction: What does it add
+to the existing body of literature/knowledge? Why is it new and/or
+interesting? Conclude the introduction by delineating the structure
+of your thesis, i.\,e., by introducing the structure of the remaining
+sections. The introduction should be internally unstructured (no
+subsections inside the introduction).
+
+\section{Results}\label{sec:results}
+
+\subsection{Structure of the Results section}\label{sec:results:overview}
+
+The first subsection of the \nameref{sec:results} is often used to
+provide a high-level overview of the entire work. This is typically
+supported by a visual overview in \Cref{fig:overview-placeholder}.
+The overview should enable readers to understand the material
+presented in the subsequent subsections of the \nameref{sec:results}
+section. The methodological details are then explained in a dedicated
+\nameref{sec:methods} section.
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.5\linewidth]{example-image-a}
+  \caption{Placeholder for a figure that visualizes the entire study.}
+  \label{fig:overview-placeholder}
+\end{figure}
+
+The remainder of the \nameref{sec:results} is typically structured
+into topical subsections. As a rule of thumb, each subsection should
+present one key finding, supported by one data figure. Of course, you
+can divert from this rule of thumb if it does not fit for your work.
+
+\subsection{Figures}\label{sec:results:figures}
+
+An example of a well-made data figure is shown in
+\Cref{fig:data-figure}. Please ensure that font sizes are large
+enough, that all colors are resolved with legends, and that all $x$-
+and $y$-axes are labeled. If possible, use vector graphics to avoid
+problems due to low resolutions. Add labels to the individual panels
+shown in your figure, which you can then use in your textual
+descriptions. E.\,g.: ``For the multi-class datasets LT1 and LT2
+(\Cref{fig:data-figure}B, C), differences in performance between the
+MLP and SOM classifiers are much more pronounced than for the binary
+datasets LT1b and LT2b (\Cref{fig:data-figure}E, F)''. Place the
+figures in the vicinity of the corresponding text by choosing the
+appropriate placement option. For instance, the placement option
+\verb|htb| used for \Cref{fig:data-figure} tells \LaTeX{} that the
+figure should be placed ``here'' (\verb|h|, preferred choice), at the
+top (\verb|t|, second choice), or at the bottom (\verb|b|, third choice).
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=\linewidth]{figures/example_figure.pdf}
+  \caption{Example of a data figure. Figure captions are placed below
+  the figures.}
+  \label{fig:data-figure}
+\end{figure}
+
+\subsection{References}\label{sec:results:references}
+
+References should be included using \verb|\textcite{ID}| and
+\verb|\cite{ID}| as in the following examples, (\verb|ID| is the
+handle of a publication defined in the file ``references.bib''). This
+produces references as in the following examples:
+\textcite{mcinnes2020umap} presented UMAP, a widely used
+dimensionality reduction method. scGPT \cite{Cui2024-km} is one of
+the earliest foundation models for single-cell RNA sequencing data.
+
+\subsection{Tables}\label{sec:results:tables}
+
+\begin{table}[htb]
+  \centering
+  \caption{Caption of \Cref{tab:supp-table}. Table captions are
+  placed above the tables.}
+  \label{tab:supp-table}
+  \begin{tabularx}{\linewidth}{lllX}
+    \toprule
+    Dataset & \# Samples & \# Features & Target variables \\
+    \midrule
+    D1 & 9473 & 187 & Five-year survival rate (binary) and overall
+    survival times (numeric)\\
+    D2 & 94734 & 1837 & Five-year survival rate (binary) and overall
+    survival times (numeric)\\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Nicely formatting tables with \LaTeX{} is a bit tricky, but it is
+possible. \Cref{tab:supp-table} shows an example that uses an
+\verb|X| column from the \verb|tabularx| environment for cells with
+automatic line break that adapt to the available horizontal space, as
+well as the \verb|\toprule|, \verb|\midrule|, and \verb|\bottomrule|
+commands from the \verb|booktabs| package. As for figures, use
+appropriate placement options to ensure that tables appear close to
+the corresponding text.
+
+\section{Discussion}\label{sec:discussion}
+
+The discussion typically starts with a summary of your work's most
+important results. Then, you discuss limitations of your work and
+potential follow-up. Finally, you end on a positive note and tell the
+reader at a very high abstraction level how your work advanced the
+field: What did we learn through your work? What do we know now that
+was not known before? Which type of analyses can now be run now that
+were not possible before?
+
+Typically, discussions are internally unstructured. But you may
+deviate from this rule of thumb, e.\,g., by including separate
+subsections on limitations and outlook.
+
+\section{Methods}\label{sec:methods}
+
+\subsection{Structure of the Methods section}
+
+Good Methods sections are designed in such a way that the subsection
+headings allow the reader to quickly navigate it without reading the
+entire section from top to bottom. You may think of it as a
+dictionary where readers look up details of the work that are of
+particular interest to them. Each individual subsection should be
+detailed enough to allow replication of your work, so be precise in
+your descriptions. Overall, the subsections of your Methods section
+should cover all methodological details that are relevant for your
+work: details on your ML model or algorithm, descriptions of datasets
+and data preprocessing, details on evaluation protocols and metrics,
+description of competitor approaches, etc.
+
+\subsection{Equations}
+
+When using mathematical formalism, make sure that you always define
+all symbols, including indices. For instance, if for some reason you
+want to introduce the quantity $s$ as the sum of all Fibonacci
+numbers $F_i$ with odd indices smaller or equal to $100$, you should
+not simply write
+\begin{equation}
+  s=\sum_{i}F_i \label{eq:bad}
+\end{equation}
+and hope that the range of the index $i$ is clear from the context.
+Instead, introduce an index set
+$\mathcal{O}_{100}=\{i\in\mathbb{N}\mid i\leq100\land\text{$i$ is
+odd}\}$ and define $s$ as in the following \Cref{eq:good}:
+\begin{equation}
+  s=\sum_{i\in\mathcal{O}_{100}}F_i \label{eq:good}
+\end{equation}
+
+Moreover, it is preferable to always use numbered instead of
+unnumbered equation environments (i.\,e.,
+  \verb|\begin{equation}...\end{equation}| and
+  \verb|\begin{align}...\end{align}| instead of
+  \verb|\begin{equation*}...\end{equation*}| and
+\verb|\begin{align*}...\end{align*}|). Like this, you can reference
+the equations in the text and it is easier for readers to refer to them.
+
+\subsection{Theorems, definitions, proofs, and similar environments}
+
+This template provides \verb|definition|, \verb|observation|,
+\verb|remark|, \verb|proposition|, \verb|lemma|, \verb|theorem|, and
+\verb|proof| environments you can use as needed. Examples are
+provided in \Cref{def:dummy-def} and \Cref{thm:dummy-theorem}.
+
+\begin{definition}[Optional name of defined concept]\label{def:dummy-def}
+  Statement of the definition.
+\end{definition}
+
+\begin{theorem}[Optional name of theorem]\label{thm:dummy-theorem}
+  Statement of the theorem.
+\end{theorem}
+
+\begin{proof}
+  Proof here.
+\end{proof}
+
+\section{Code availability}\label{sec:code}
+
+If you wrote any source code as part of your work, provide a link to
+a well-documented GitHub repository here. Moreover, release a stable
+version of your source code and provide its DOI here. You can use
+Zenodo for this, see \url{https://help.zenodo.org/docs/github/}.
+Write ``Not applicable'' if and only if you did not write any source
+code as part of your work.
+
+\section{Data availability}\label{sec:data}
+
+Describe from where you obtained the public data underlying your
+work. Your descriptions should be detailed enough to allow others to
+access the exact same data and to reproduce your results, using the
+code you linked in \Cref{sec:code}. If you generated data yourself
+(e.g., through simulation), either deposit the data in a public
+repository such as Zenodo and provide the DOI here or explain how
+others can rerun the simulation to generate the data themselves. If
+you used private or sensitive data that is not public and cannot be
+made publicly available, explain why this is the case. Write ``Not
+applicable'' if and only if you did not use any data for your work.
+
+\printbibliography
+
+\clearpage
+
+\appendix
+\renewcommand{\thefigure}{S\arabic{figure}}
+\renewcommand{\thetable}{S\arabic{table}}
+\setcounter{figure}{0}
+\setcounter{table}{0}
+\crefalias{section}{appendix}
+\crefname{appendix}{appendix}{appendices}
+\Crefname{appendix}{Appendix}{Appendices}
+
+\section{Supplementary figures}\label{appendix:figures}
+
+Supplementary figures that provide additional results but do not fit
+into the narrative of the main text can be put here. All
+supplementary figures should be referenced from the main text and
+should be listed here in the order of these references. Delete this
+section if not needed.
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.5\linewidth]{example-image-b}
+  \caption{Caption of \Cref{fig:supp-fig}.}
+  \label{fig:supp-fig}
+\end{figure}
+
+\section{Supplementary tables}\label{appendic:tables}
+
+Supplementary tables that provide additional results but do not fit
+into the narrative of the main text can be put here. All
+supplementary tables should be referenced from the main text and
+should be listed here in the order of these references. Delete this
+section if not needed.
+
+\begin{table}[htb]
+  \centering
+  \caption{Example of a table generated with the \texttt{tabular}
+    environment that has a slightly simpler syntax than the
+    \texttt{tabularx} environment but does not support flexible-width
+  columns.}\label{tab:supptab}
+  \begin{tabular}{lll}
+    \toprule
+    Column 1 & Column 2 & Column 3\\
+    \midrule
+    X & Y & Z \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\clearpage
+
+\section{AI usage declaration}\label{sec:ai-declaration}
+
+In the boxes below, please specify which AI tool you used, to what
+extent, and for which task. If you did not use AI tools for the task,
+please state so by writing \textit{``I did not use any AI tools for
+this task''} in the corresponding box. Examples of AI tools to
+declare: ChatGPT, Claude, Gemini, Microsoft Copilot, Grammarly,
+DeepL, Google Translate, Perplexity, Elicit, Explainpaper, and
+ResearchRabbit. Example sentences:
+
+\begin{itemize}
+  \item Task: Review and editing of the text: \textit{``I used
+      Grammarly for proofreading, revising the grammar of the text in
+      \Cref{sec:introduction,sec:discussion}, and for rewording
+    convoluted sentences throughout this work.''}
+  \item Task: Structuring and planning the text: \textit{``I used
+      Claude to suggest how my background description in
+    \Cref{sec:introduction} should be structured and what should be included.''}
+  \item Task: Coding: \textit{``I used the Microsoft Copilot
+      extension in my IDE for code completion and for generating the
+    code for the JavaScript frontend.''}
+\end{itemize}
+
+\vspace{.25em}
+
+\begin{answerbox}{Task: Brainstorming and concept development}
+  Tools used for the development of ideas, obtaining research goals,
+  objectives, designing the research, and identifying and defining
+  relevant concepts.
+\end{answerbox}
+
+\vspace{.25em}
+
+\begin{answerbox}{Task: Literature review and analysis}
+  Tools used for identifying relevant literature, reviewing
+  potentially relevant literature,  and creating summaries.
+\end{answerbox}
+
+\vspace{.25em}
+
+\begin{answerbox}{Task: Methodology}
+  Tools used for identifying a suitable methodology and developing
+  and adapting the methodology to the research question(s).
+\end{answerbox}
+
+\vspace{.25em}
+
+\begin{answerbox}{Task: Coding}
+  Tools used for writing and documenting code, algorithms, and
+  software, testing and debugging, and understanding existing code.
+\end{answerbox}
+
+\vspace{.25em}
+
+\begin{answerbox}{Task: Data collection, generation, and analysis}
+  Tools used for collecting, generating, and processing primary or
+  secondary data. Tools for qualitative or quantitative data analysis.
+\end{answerbox}
+
+\vspace{.25em}
+
+\begin{answerbox}{Task: Interpretation and validation}
+  Tools used for interpreting results, deriving implications, and
+  assessing general replicability and reproducibility of the results
+  or other research findings.
+\end{answerbox}
+
+\vspace{.25em}
+
+\begin{answerbox}{Task: Structuring and planning the text}
+  Tools used for generating the outline of the work and/or the
+  outline of specific sections.
+\end{answerbox}
+
+\vspace{.25em}
+
+\begin{answerbox}{Task: Text generation}
+  Tools used for generating text on various topics in different
+  sections of the work, including titles and abstracts.
+\end{answerbox}
+
+\vspace{.25em}
+
+\begin{answerbox}{Task: Translating text}
+  Tools used for translating text written by the author or by others.
+\end{answerbox}
+
+\vspace{.25em}
+
+\begin{answerbox}{Task: Review and editing of the text}
+  Tools used for critically reviewing the written text, obtaining
+  feedback, revising the content, structure, or grammar of the text,
+  proofreading, rewording or paraphrasing the given text, and
+  shortening or expanding the text.
+\end{answerbox}
+
+\vspace{.25em}
+
+\begin{answerbox}{Task: Bibliography management}
+  Tools used to create or format the reference list.
+\end{answerbox}
+
+\vspace{.25em}
+
+\begin{answerbox}{Task: Other activities}
+  Tools used for anything not covered by the given tasks.
+\end{answerbox}
+
+\clearpage
+
+\section{Declaration of academic integrity}\label{sec:declaration}
+
+I hereby declare that I have authored this work independently and
+without the use of any sources or assistance other than those
+specifically cited. All content taken verbatim or paraphrased from
+other sources has been clearly identified as such. Furthermore, I
+certify that this work has not been submitted, in its current or a
+similar form, for any other examination. All usage of AI tools has
+been fully disclosed in \Cref{sec:ai-declaration}, and I take full
+responsibility for all content generated with the help of AI. I am
+aware that any false or incomplete declarations given here or in
+\Cref{sec:ai-declaration} may be treated as attempts at deception and
+could thus lead to the failure of this examination. I am also aware
+that inability to provide in-depth technical explanations for any
+content contained in this work or in the underlying source code may
+be treated as evidence for illicit AI usage or misappropriation of
+the work of others and could thus lead to the failure of this examination.
+
+\namesigdate{[Your name]}
+
+\end{document}
