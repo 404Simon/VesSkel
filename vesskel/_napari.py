@@ -54,9 +54,9 @@ class VesselAnalysisWidget(Container):
         extraction_gui = magicgui(
             _extraction_params,
             image={"label": "Input image"},
-            extract_branches={"annotation": bool, "value": True},
-            extract_branch_text={"annotation": bool, "value": True},
-            extract_summary={"annotation": bool, "value": True},
+            extract_branches={"annotation": bool, "value": False},
+            extract_branch_text={"annotation": bool, "value": False},
+            extract_summary={"annotation": bool, "value": False},
             include_fractal={"annotation": bool, "value": False},
             junction_cleanup={"annotation": bool, "value": False},
             cleanup_threshold_factor={

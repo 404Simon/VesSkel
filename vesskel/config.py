@@ -24,9 +24,9 @@ def _warn_unknown_keys(known: set[str], data: dict[str, Any]) -> None:
 class ExtractionConfig:
     """Configuration for what to extract from a skeleton."""
 
-    branches: bool = True
-    branch_text: bool = True
-    summary: bool = True
+    branches: bool = False
+    branch_text: bool = False
+    summary: bool = False
     fractal_dimension: bool = False
     vessel_radius: bool = False
     junction_cleanup: bool = False
