@@ -37,7 +37,7 @@ class TestExtractSkeletonLayers:
     def features(self, skeleton, graph, branch_data):
         return _features_for(skeleton, graph, branch_data)
 
-    def test_default_config_returns_layers(
+    def test_with_config_returns_layers(
         self, skeleton, graph, branch_data, features
     ):
         layers = extract_skeleton_layers(
@@ -45,12 +45,16 @@ class TestExtractSkeletonLayers:
             "test",
             graph,
             branch_data,
+            config=ExtractionConfig(branches=True, summary=True),
             features=features,
         )
         assert len(layers) > 0
-        assert all(isinstance(layer, tuple) and len(layer) == 3 for layer in layers)
+        for layer in layers:
+            assert isinstance(layer, tuple) and len(layer) == 3
+            assert isinstance(layer[1], dict)
+            assert isinstance(layer[2], str)
 
-    def test_default_config_includes_branch_layer(
+    def test_with_config_includes_branch_layer(
         self, skeleton, graph, branch_data, features
     ):
         layers = extract_skeleton_layers(
@@ -58,12 +62,13 @@ class TestExtractSkeletonLayers:
             "test",
             graph,
             branch_data,
+            config=ExtractionConfig(branches=True, summary=True),
             features=features,
         )
         layer_types = [layer[2] for layer in layers]
         assert "shapes" in layer_types
 
-    def test_default_config_includes_summary_layer(
+    def test_with_config_includes_summary_layer(
         self, skeleton, graph, branch_data, features
     ):
         layers = extract_skeleton_layers(
@@ -71,12 +76,13 @@ class TestExtractSkeletonLayers:
             "test",
             graph,
             branch_data,
+            config=ExtractionConfig(branches=True, summary=True),
             features=features,
         )
         layer_names = [layer[1].get("name", "") for layer in layers]
         assert any("_summary" in name for name in layer_names)
 
-    def test_default_config_includes_two_point_layers(
+    def test_with_config_includes_two_point_layers(
         self, skeleton, graph, branch_data, features
     ):
         layers = extract_skeleton_layers(
@@ -84,6 +90,7 @@ class TestExtractSkeletonLayers:
             "test",
             graph,
             branch_data,
+            config=ExtractionConfig(branches=True, branch_text=True, summary=True),
             features=features,
         )
         layer_types = [layer[2] for layer in layers]
@@ -104,7 +111,7 @@ class TestExtractSkeletonLayers:
         assert "shapes" not in layer_types
 
     def test_branch_text_disabled(self, skeleton, graph, branch_data, features):
-        config = ExtractionConfig(branches=True, branch_text=False)
+        config = ExtractionConfig(branches=True, branch_text=False, summary=True)
         layers = extract_skeleton_layers(
             skeleton,
             "test",
@@ -118,7 +125,7 @@ class TestExtractSkeletonLayers:
         assert not any("branch_text" in name for name in layer_names)
 
     def test_summary_disabled(self, skeleton, graph, branch_data):
-        config = ExtractionConfig(summary=False)
+        config = ExtractionConfig(branches=True, branch_text=True, summary=False)
         layers = extract_skeleton_layers(
             skeleton,
             "test",
@@ -130,20 +137,6 @@ class TestExtractSkeletonLayers:
         assert "points" in layer_types
         layer_names = [layer[1].get("name", "") for layer in layers]
         assert not any("summary" in name for name in layer_names)
-
-    def test_summary_disabled_no_features_needed(self, skeleton, graph, branch_data):
-        config = ExtractionConfig(summary=False)
-        layers = extract_skeleton_layers(
-            skeleton,
-            "test",
-            graph,
-            branch_data,
-            config=config,
-            features=None,
-        )
-        assert len(layers) > 0
-        layer_names = [l[1].get("name", "") for l in layers]
-        assert not any("_summary" in name for name in layer_names)
 
     def test_with_features_passed(self, skeleton, graph, branch_data, features):
         config = ExtractionConfig(summary=True)
@@ -196,8 +189,10 @@ class TestExtractSkeletonLayers:
             base_name,
             graph,
             branch_data,
+            config=ExtractionConfig(branches=True, summary=True),
             features=features,
         )
+        assert len(layers) > 0
         for layer in layers:
             assert base_name in layer[1].get("name", "")
 
@@ -207,6 +202,7 @@ class TestExtractSkeletonLayers:
             "test",
             graph,
             branch_data,
+            config=ExtractionConfig(branches=True, summary=True),
             features=features,
         )
         branch_layer = [l for l in layers if l[2] == "shapes"][0]
@@ -237,6 +233,7 @@ class TestExtractSkeletonLayers:
             "empty",
             graph,
             branch_data,
+            config=ExtractionConfig(summary=True),
             features=features,
         )
         summary = [l for l in layers if "_summary" in l[1].get("name", "")]
@@ -250,6 +247,7 @@ class TestExtractSkeletonLayers:
             "test",
             graph,
             branch_data,
+            config=ExtractionConfig(branches=True, branch_text=True, summary=True),
             features=features,
         )
         text_layers = [

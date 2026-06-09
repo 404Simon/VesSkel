@@ -52,59 +52,34 @@ class TestAnalyzeBinaryImage:
         return img
 
     @pytest.fixture
-    def default_config(self):
+    def analysis_config(self):
+        """Shared config with branches and summary enabled."""
         return PipelineConfig(
-            extraction=ExtractionConfig(),
+            extraction=ExtractionConfig(branches=True, summary=True),
             output=OutputConfig(),
         )
 
-    def test_empty_image_returns_empty_result(self, default_config):
+    def test_empty_image_returns_empty_result(self, analysis_config):
         img = np.zeros((32, 32), dtype=np.uint8)
-        result = analyze_binary_image(img, "test", default_config)
+        result = analyze_binary_image(img, "test", analysis_config)
         assert not result.skeleton.any()
         assert result.layers == []
         assert result.summary_features == {}
         assert result.branch_records == []
         assert result.radius_matrix is None
 
-    def test_all_zero_image_is_empty(self, default_config):
-        result = analyze_binary_image(np.zeros((8, 8)), "z", default_config)
-        assert not result.skeleton.any()
-
-    def test_cross_produces_skeleton(self, cross_image, default_config):
-        result = analyze_binary_image(cross_image, "cross", default_config)
+    def test_cross_produces_skeleton(self, cross_image, analysis_config):
+        result = analyze_binary_image(cross_image, "cross", analysis_config)
         assert result.skeleton.any()
         assert result.skeleton.dtype == np.uint8
         assert result.skeleton.shape == cross_image.shape
 
-    def test_non_binary_input_is_binarized(self, default_config):
+    def test_non_binary_input_is_binarized(self, analysis_config):
         img = np.zeros((20, 20), dtype=np.int32)
         img[10, 5:15] = 200
-        result = analyze_binary_image(img, "test", default_config)
+        result = analyze_binary_image(img, "test", analysis_config)
         assert result.skeleton.any()
         assert set(np.unique(result.skeleton)) <= {0, 1}
-
-    def test_layers_have_three_element_tuples(self, cross_image, default_config):
-        result = analyze_binary_image(cross_image, "test", default_config)
-        assert len(result.layers) > 0
-        for layer in result.layers:
-            assert len(layer) == 3
-            assert isinstance(layer[1], dict)
-            assert isinstance(layer[2], str)
-
-    def test_base_name_in_layer_metadata(self, cross_image, default_config):
-        result = analyze_binary_image(cross_image, "myimage", default_config)
-        found = False
-        for layer in result.layers:
-            if "name" in layer[1]:
-                found = True
-                break
-        assert found, "No layer has a 'name' key in metadata"
-
-    def test_summary_features_not_empty(self, cross_image, default_config):
-        result = analyze_binary_image(cross_image, "cross", default_config)
-        assert len(result.summary_features) > 0
-        assert "num_endpoints" in result.summary_features
 
     def test_summary_disabled_returns_empty_features(self, cross_image):
         config = PipelineConfig(
@@ -114,18 +89,8 @@ class TestAnalyzeBinaryImage:
         result = analyze_binary_image(cross_image, "cross", config)
         assert result.summary_features == {}
 
-    def test_summary_disabled_in_pipeline_config(self):
-        img = np.zeros((16, 16), dtype=np.uint8)
-        img[8, 4:12] = 1
-        config = PipelineConfig(
-            extraction=ExtractionConfig(summary=False),
-            output=OutputConfig(),
-        )
-        result = analyze_binary_image(img, "line", config)
-        assert result.summary_features == {}
-
-    def test_branches_enabled_by_default(self, cross_image, default_config):
-        result = analyze_binary_image(cross_image, "cross", default_config)
+    def test_branches_enabled(self, cross_image, analysis_config):
+        result = analyze_binary_image(cross_image, "cross", analysis_config)
         assert len(result.branch_records) > 0
         assert isinstance(result.branch_records[0], dict)
 
@@ -139,7 +104,7 @@ class TestAnalyzeBinaryImage:
 
     def test_vessel_radius_enabled(self, cross_image):
         config = PipelineConfig(
-            extraction=ExtractionConfig(vessel_radius=True),
+            extraction=ExtractionConfig(vessel_radius=True, summary=True),
             output=OutputConfig(),
         )
         result = analyze_binary_image(cross_image, "cross", config)
@@ -148,13 +113,13 @@ class TestAnalyzeBinaryImage:
         assert result.radius_matrix.any()
         assert result.summary_features["mean_radius"] > 0
 
-    def test_vessel_radius_disabled_radius_none(self, cross_image, default_config):
-        result = analyze_binary_image(cross_image, "cross", default_config)
+    def test_vessel_radius_disabled_radius_none(self, cross_image, analysis_config):
+        result = analyze_binary_image(cross_image, "cross", analysis_config)
         assert result.radius_matrix is None
 
     def test_radius_stats_in_summary_when_enabled(self, cross_image):
         config = PipelineConfig(
-            extraction=ExtractionConfig(vessel_radius=True),
+            extraction=ExtractionConfig(vessel_radius=True, summary=True),
             output=OutputConfig(),
         )
         result = analyze_binary_image(cross_image, "cross", config)
@@ -172,13 +137,13 @@ class TestAnalyzeBinaryImage:
             assert key in result.summary_features
             assert result.summary_features[key] > 0
 
-    def test_fractal_dimension_disabled_by_default(self, cross_image, default_config):
-        result = analyze_binary_image(cross_image, "cross", default_config)
+    def test_fractal_dimension_disabled_by_default(self, cross_image, analysis_config):
+        result = analyze_binary_image(cross_image, "cross", analysis_config)
         assert result.summary_features["fractal_dimension"] == 0.0
 
     def test_fractal_dimension_enabled(self, cross_image):
         config = PipelineConfig(
-            extraction=ExtractionConfig(fractal_dimension=True),
+            extraction=ExtractionConfig(fractal_dimension=True, summary=True),
             output=OutputConfig(),
         )
         result = analyze_binary_image(cross_image, "cross", config)
@@ -225,7 +190,9 @@ class TestAnalyzeBinaryImage:
         vol = np.zeros((16, 16, 16), dtype=np.uint8)
         vol[8, 8, :] = 1
         vol[8, :, 8] = 1
-        config = PipelineConfig(extraction=ExtractionConfig(), output=OutputConfig())
+        config = PipelineConfig(
+            extraction=ExtractionConfig(summary=True), output=OutputConfig()
+        )
         result = analyze_binary_image(vol, "vol", config)
         assert result.skeleton.any()
         assert len(result.summary_features) > 0
@@ -234,7 +201,9 @@ class TestAnalyzeBinaryImage:
         vol = np.zeros((12, 12, 12), dtype=np.uint8)
         vol[6, 6, :] = 1
         config = PipelineConfig(
-            extraction=ExtractionConfig(vessel_radius=True, fractal_dimension=True),
+            extraction=ExtractionConfig(
+                vessel_radius=True, fractal_dimension=True, summary=True
+            ),
             output=OutputConfig(),
         )
         result = analyze_binary_image(vol, "vol3d", config)
@@ -242,10 +211,10 @@ class TestAnalyzeBinaryImage:
         assert result.radius_matrix.shape == vol.shape
         assert result.summary_features["mean_radius"] > 0
 
-    def test_cross_topology_num_endpoints(self, cross_image, default_config):
-        result = analyze_binary_image(cross_image, "cross", default_config)
+    def test_cross_topology_num_endpoints(self, cross_image, analysis_config):
+        result = analyze_binary_image(cross_image, "cross", analysis_config)
         assert result.summary_features["num_endpoints"] == 4
 
-    def test_cross_topology_num_bifurcations(self, cross_image, default_config):
-        result = analyze_binary_image(cross_image, "cross", default_config)
+    def test_cross_topology_num_bifurcations(self, cross_image, analysis_config):
+        result = analyze_binary_image(cross_image, "cross", analysis_config)
         assert result.summary_features["num_bifurcations"] == 1

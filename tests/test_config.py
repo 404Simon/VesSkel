@@ -15,9 +15,9 @@ from vesskel.config import (
 class TestExtractionConfig:
     def test_defaults(self):
         c = ExtractionConfig()
-        assert c.branches is True
-        assert c.branch_text is True
-        assert c.summary is True
+        assert c.branches is False
+        assert c.branch_text is False
+        assert c.summary is False
         assert c.fractal_dimension is False
         assert c.vessel_radius is False
 
@@ -223,7 +223,7 @@ class TestConfigFileIO:
             raw = json.load(f)
 
         assert raw["schema_version"] == CONFIG_SCHEMA_VERSION
-        assert raw["extraction"]["branches"] is True
+        assert raw["extraction"]["branches"] is False
         assert raw["output"]["write_summary_csv"] is True
 
     def test_load_missing_file(self, tmp_path):
