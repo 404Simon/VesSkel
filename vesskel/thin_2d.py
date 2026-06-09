@@ -71,28 +71,6 @@ def _build_simple_lut():
 _SIMPLE_LUT = _build_simple_lut()
 
 
-@njit(cache=True)
-def _is_endpoint(img, r, c):
-    """Check if point is an endpoint (exactly 1 foreground neighbor)."""
-    count = 0
-    for dr, dc in _NEIGHBORS:
-        if img[r + dr, c + dc] == 1:
-            count += 1
-            if count > 1:
-                return False
-    return True
-
-
-@njit(cache=True)
-def _is_simple_point(img, r, c):
-    p = np.uint8(0)
-    for i in range(8):
-        dr, dc = _NEIGHBORS[i]
-        if img[r + dr, c + dc]:
-            p |= np.uint8(1 << i)
-    return _SIMPLE_LUT[p]
-
-
 @njit(parallel=True, cache=True)
 def thin_2d(img):
     """Lee94 thinning algorithm for a 2D binary image.
@@ -118,46 +96,99 @@ def thin_2d(img):
     row_counts = np.zeros(h, dtype=np.int64)
     # Flattened candidates for sequential recheck
     candidates = np.empty((h * w, 2), dtype=np.int64)
+    group_candidates = np.empty((4, h * w, 2), dtype=np.int64)
+    group_counts = np.zeros(4, dtype=np.int64)
+    can_remove = np.zeros(h * w, dtype=np.bool_)
+
+    b0r, b0c = _BORDERS[0]
+    b1r, b1c = _BORDERS[1]
+    b2r, b2c = _BORDERS[2]
+    b3r, b3c = _BORDERS[3]
 
     while True:
         total_removed = 0
 
-        for border_idx in range(4):
-            br, bc = _BORDERS[border_idx]
-
-            # Step 1: collect candidates in parallel (per-row)
-            row_counts[:] = 0
-            for r in prange(1, h + 1):
-                for c in range(1, w + 1):
-                    if padded[r, c] != 1:
-                        continue
-                    if padded[r + br, c + bc] != 0:
-                        continue
-                    if _is_endpoint(padded, r, c):
-                        continue
-                    if not _is_simple_point(padded, r, c):
-                        continue
-                    idx = row_counts[r - 1]
-                    row_candidates[r - 1, idx, 0] = r
-                    row_candidates[r - 1, idx, 1] = c
-                    row_counts[r - 1] = idx + 1
-
-            # Merge per-row results into flat candidates array
-            count = 0
-            for r in range(h):
-                for i in range(row_counts[r]):
-                    candidates[count, 0] = row_candidates[r, i, 0]
-                    candidates[count, 1] = row_candidates[r, i, 1]
-                    count += 1
-
-            # Step 2: sequential rechecking (data dependency - cannot parallelize)
-            for i in range(count):
-                r = candidates[i, 0]
-                c = candidates[i, 1]
+        # Phase 1: single combined scan -all 4 borders
+        row_counts[:] = 0
+        for r in prange(1, h + 1):
+            ri = r - 1
+            rc = row_candidates[ri]
+            cnt = 0
+            for c in range(1, w + 1):
                 if padded[r, c] != 1:
                     continue
-                if _is_simple_point(padded, r, c):
-                    padded[r, c] = 0
+                if (
+                    padded[r + b0r, c + b0c] != 0
+                    and padded[r + b1r, c + b1c] != 0
+                    and padded[r + b2r, c + b2c] != 0
+                    and padded[r + b3r, c + b3c] != 0
+                ):
+                    continue
+                rc[cnt, 0] = r
+                rc[cnt, 1] = c
+                cnt += 1
+            row_counts[ri] = cnt
+
+        count = 0
+        for ri in range(h):
+            n = row_counts[ri]
+            rc = row_candidates[ri]
+            for j in range(n):
+                candidates[count, 0] = rc[j, 0]
+                candidates[count, 1] = rc[j, 1]
+                count += 1
+
+        if count == 0:
+            break
+
+        # Bucket into 4 parity groups
+        group_counts[:] = 0
+        for i in range(count):
+            r = candidates[i, 0]
+            c = candidates[i, 1]
+            g = ((r & 1) << 1) | (c & 1)
+            gc = group_counts[g]
+            group_candidates[g, gc, 0] = r
+            group_candidates[g, gc, 1] = c
+            group_counts[g] = gc + 1
+
+        # Phase 2: Wavefront -4 groups
+        for g in range(4):
+            gc = group_counts[g]
+            if gc == 0:
+                continue
+            gca = group_candidates[g]
+
+            for i in prange(gc):
+                r = gca[i, 0]
+                c = gca[i, 1]
+                if padded[r, c] != 1:
+                    can_remove[i] = False
+                    continue
+
+                pat = np.uint8(0)
+                if padded[r - 1, c - 1]:
+                    pat |= np.uint8(1)
+                if padded[r - 1, c]:
+                    pat |= np.uint8(2)
+                if padded[r - 1, c + 1]:
+                    pat |= np.uint8(4)
+                if padded[r, c - 1]:
+                    pat |= np.uint8(8)
+                if padded[r, c + 1]:
+                    pat |= np.uint8(16)
+                if padded[r + 1, c - 1]:
+                    pat |= np.uint8(32)
+                if padded[r + 1, c]:
+                    pat |= np.uint8(64)
+                if padded[r + 1, c + 1]:
+                    pat |= np.uint8(128)
+
+                can_remove[i] = _SIMPLE_LUT[pat]
+
+            for i in range(gc):
+                if can_remove[i]:
+                    padded[gca[i, 0], gca[i, 1]] = 0
                     total_removed += 1
 
         if total_removed == 0:

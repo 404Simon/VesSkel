@@ -315,92 +315,15 @@ def _is_simple_point(neighbors):
 
 
 @njit(cache=True)
-def _find_simple_point_candidates(img, curr_border, candidates):
-    count = 0
-    dp = int(_BORDER_OFFSETS[curr_border, 0])
-    dr = int(_BORDER_OFFSETS[curr_border, 1])
-    dc = int(_BORDER_OFFSETS[curr_border, 2])
-
-    for p in range(1, img.shape[0] - 1):
-        for r in range(1, img.shape[1] - 1):
-            for c in range(1, img.shape[2] - 1):
-                if img[p, r, c] != 1:
-                    continue
-                if img[p + dp, r + dr, c + dc] != 0:
-                    continue
-
-                candidates[count, 0] = p
-                candidates[count, 1] = r
-                candidates[count, 2] = c
-                count += 1
-
-    return count
+def _check_voxel(neighborhood):
+    return (
+        not _is_endpoint(neighborhood)
+        and _is_euler_invariant(neighborhood)
+        and _is_simple_point(neighborhood)
+    )
 
 
-@njit(cache=True, parallel=True)
-def _mark_removable_candidates(img, candidates, num_candidates, removable):
-    for i in prange(num_candidates):
-        p = candidates[i, 0]
-        r = candidates[i, 1]
-        c = candidates[i, 2]
-
-        neighborhood = np.empty(27, dtype=np.uint8)
-        _get_neighborhood(img, p, r, c, neighborhood)
-
-        can_remove = (
-            (not _is_endpoint(neighborhood))
-            and _is_euler_invariant(neighborhood)
-            and _is_simple_point(neighborhood)
-        )
-        removable[i] = 1 if can_remove else 0
-
-
-@njit(cache=True)
-def _apply_removals(img, candidates, num_candidates, removable):
-    removed = 0
-    neighborhood = np.empty(27, dtype=np.uint8)
-    for i in range(num_candidates):
-        if removable[i] == 0:
-            continue
-        p = candidates[i, 0]
-        r = candidates[i, 1]
-        c = candidates[i, 2]
-        if img[p, r, c] != 1:
-            continue
-        _get_neighborhood(img, p, r, c, neighborhood)
-        if _is_simple_point(neighborhood):
-            img[p, r, c] = 0
-            removed += 1
-    return removed
-
-
-@njit(cache=True)
-def _compute_thin_image(img):
-    num_borders = 6
-    unchanged_borders = 0
-
-    candidates = np.empty((img.size, 3), dtype=np.int32)
-    removable = np.empty(img.size, dtype=np.uint8)
-
-    while unchanged_borders < num_borders:
-        unchanged_borders = 0
-        for j in range(num_borders):
-            curr_border = _BORDERS[j]
-            num_candidates = _find_simple_point_candidates(img, curr_border, candidates)
-
-            if num_candidates == 0:
-                unchanged_borders += 1
-                continue
-
-            _mark_removable_candidates(img, candidates, num_candidates, removable)
-            removed = _apply_removals(img, candidates, num_candidates, removable)
-
-            if removed == 0:
-                unchanged_borders += 1
-
-    return img
-
-
+@njit(parallel=True, cache=True)
 def thin_3d(img):
     """Lee94 thinning algorithm for a 3D binary volume.
 
@@ -419,14 +342,143 @@ def thin_3d(img):
     ValueError
         If input is not 3-dimensional.
     """
-    if img.ndim != 3:
-        raise ValueError(f"Expected 3D input, got {img.ndim}D")
+    img = img.astype(np.uint8).copy()
+    d, h, w = img.shape
 
-    work = (img > 0).astype(np.uint8, copy=False)
-    padded = np.zeros(
-        (work.shape[0] + 2, work.shape[1] + 2, work.shape[2] + 2), dtype=np.uint8
-    )
-    padded[1:-1, 1:-1, 1:-1] = work
+    padded = np.zeros((d + 2, h + 2, w + 2), dtype=np.uint8)
+    padded[1:-1, 1:-1, 1:-1] = img
 
-    out = _compute_thin_image(padded)
-    return out[1:-1, 1:-1, 1:-1].copy()
+    max_candidates = d * h * w
+    candidates = np.empty((max_candidates, 3), dtype=np.int64)
+    can_remove = np.zeros(max_candidates, dtype=np.bool_)
+    group_indices = np.empty((8, max_candidates), dtype=np.int64)
+    group_counts = np.zeros(8, dtype=np.int64)
+
+    # Pre-load border offsets for combined scan
+    b1 = _BORDER_OFFSETS[1]
+    b2 = _BORDER_OFFSETS[2]
+    b3 = _BORDER_OFFSETS[3]
+    b4 = _BORDER_OFFSETS[4]
+    b5 = _BORDER_OFFSETS[5]
+    b6 = _BORDER_OFFSETS[6]
+
+    while True:
+        total_removed = 0
+
+        # ---------------------------------------------------------------
+        # Pass 1: count candidates per (p, r) pair
+        # ---------------------------------------------------------------
+        pr_counts = np.zeros(d * h, dtype=np.int64)
+        for p in prange(0, d):
+            pp = p + 1
+            for r in range(h):
+                rr = r + 1
+                pr_idx = p * h + r
+                cnt = 0
+                for c in range(w):
+                    cc = c + 1
+                    if padded[pp, rr, cc] != 1:
+                        continue
+                    if (
+                        padded[pp + b1[0], rr + b1[1], cc + b1[2]] != 0
+                        and padded[pp + b2[0], rr + b2[1], cc + b2[2]] != 0
+                        and padded[pp + b3[0], rr + b3[1], cc + b3[2]] != 0
+                        and padded[pp + b4[0], rr + b4[1], cc + b4[2]] != 0
+                        and padded[pp + b5[0], rr + b5[1], cc + b5[2]] != 0
+                        and padded[pp + b6[0], rr + b6[1], cc + b6[2]] != 0
+                    ):
+                        continue
+                    cnt += 1
+                pr_counts[pr_idx] = cnt
+
+        # Prefix sum
+        offsets = np.empty(d * h + 1, dtype=np.int64)
+        offsets[0] = 0
+        for i in range(d * h):
+            offsets[i + 1] = offsets[i] + pr_counts[i]
+        total_count = offsets[d * h]
+
+        if total_count == 0:
+            break
+
+        # ---------------------------------------------------------------
+        # Pass 2: fill candidates using offset indices
+        # ---------------------------------------------------------------
+        for p in prange(0, d):
+            pp = p + 1
+            for r in range(h):
+                rr = r + 1
+                pr_idx = p * h + r
+                base = offsets[pr_idx]
+                cnt = 0
+                nc = pr_counts[pr_idx]
+                for c in range(w):
+                    cc = c + 1
+                    if padded[pp, rr, cc] != 1:
+                        continue
+                    if (
+                        padded[pp + b1[0], rr + b1[1], cc + b1[2]] != 0
+                        and padded[pp + b2[0], rr + b2[1], cc + b2[2]] != 0
+                        and padded[pp + b3[0], rr + b3[1], cc + b3[2]] != 0
+                        and padded[pp + b4[0], rr + b4[1], cc + b4[2]] != 0
+                        and padded[pp + b5[0], rr + b5[1], cc + b5[2]] != 0
+                        and padded[pp + b6[0], rr + b6[1], cc + b6[2]] != 0
+                    ):
+                        continue
+                    idx = base + cnt
+                    candidates[idx, 0] = pp
+                    candidates[idx, 1] = rr
+                    candidates[idx, 2] = cc
+                    cnt += 1
+
+        # ---------------------------------------------------------------
+        # Bucket into 8 parity groups
+        # ---------------------------------------------------------------
+        group_counts[:] = 0
+        for i in range(total_count):
+            p = candidates[i, 0]
+            r = candidates[i, 1]
+            c = candidates[i, 2]
+            g = ((p & 1) << 2) | ((r & 1) << 1) | (c & 1)
+            gc = group_counts[g]
+            group_indices[g, gc] = i
+            group_counts[g] = gc + 1
+
+        # ---------------------------------------------------------------
+        # Phase 2: Wavefront -8 parity groups
+        # ---------------------------------------------------------------
+        neighborhood = np.empty(27, dtype=np.uint8)
+
+        for g in range(8):
+            gc = group_counts[g]
+            if gc == 0:
+                continue
+
+            # Parallel check: endpoint + Euler + 26-connectivity
+            for j in prange(gc):
+                idx = group_indices[g, j]
+                p = candidates[idx, 0]
+                r = candidates[idx, 1]
+                c = candidates[idx, 2]
+
+                if padded[p, r, c] != 1:
+                    can_remove[idx] = False
+                    continue
+
+                _get_neighborhood(padded, p, r, c, neighborhood)
+                can_remove[idx] = _check_voxel(neighborhood)
+
+            # Sequential apply
+            for j in range(gc):
+                idx = group_indices[g, j]
+                if can_remove[idx]:
+                    p = candidates[idx, 0]
+                    r = candidates[idx, 1]
+                    c = candidates[idx, 2]
+                    padded[p, r, c] = 0
+                    total_removed += 1
+
+        if total_removed == 0:
+            break
+
+    return padded[1:-1, 1:-1, 1:-1].copy()
