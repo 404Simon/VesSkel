@@ -65,14 +65,14 @@ def analyze_binary_image(
         ).astype(binary.dtype)
 
     if config.extraction.fill_holes:
-        before_fill = binary.copy()
+        before_fill = binary.copy() if config.extraction.max_hole_size > 0 else None
         binary = ndi.binary_fill_holes(binary).astype(binary.dtype)
 
-        if config.extraction.max_hole_size > 0:
+        if config.extraction.max_hole_size > 0 and before_fill is not None:
             diff = binary.astype(np.int8) - before_fill.astype(np.int8)
             filled = diff > 0
             if filled.any():
-                labels, n = ndi.label(filled)
+                labels, _ = ndi.label(filled)
                 sizes = np.bincount(labels.ravel())
                 big = sizes > config.extraction.max_hole_size
                 big[0] = False
