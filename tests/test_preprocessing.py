@@ -1,0 +1,164 @@
+import numpy as np
+
+from vesskel.config import ExtractionConfig, OutputConfig, PipelineConfig
+from vesskel.pipeline import analyze_binary_image
+
+
+class TestClosing:
+    def test_closing_bridges_1px_gap_in_thick_line(self):
+        gap = np.zeros((16, 16), dtype=np.uint8)
+        gap[7:10, 4:7] = 1
+        gap[7:10, 8:12] = 1
+
+        config = PipelineConfig(
+            extraction=ExtractionConfig(closing_iterations=1),
+            output=OutputConfig(),
+        )
+        result = analyze_binary_image(gap, "gap", config)
+        # closing bridges the 1px gap at column 7 in the 3px-thick line
+        assert result.skeleton[7:10, 7].any()
+
+    def test_closing_bridges_gap_in_thick_region(self):
+        block = np.zeros((16, 16), dtype=np.uint8)
+        block[6:10, 4:7] = 1
+        block[6:10, 8:12] = 1
+
+        config = PipelineConfig(
+            extraction=ExtractionConfig(closing_iterations=1),
+            output=OutputConfig(),
+        )
+        result = analyze_binary_image(block, "block", config)
+        # the 1px gap at column 7 should be bridged before thinning
+        assert result.skeleton[6:10, 7].any()
+
+    def test_closing_off_does_not_modify(self):
+        gap = np.zeros((16, 16), dtype=np.uint8)
+        gap[7:10, 4:7] = 1
+        gap[7:10, 8:12] = 1
+
+        config = PipelineConfig(
+            extraction=ExtractionConfig(closing_iterations=0),
+            output=OutputConfig(),
+        )
+        result = analyze_binary_image(gap, "gap", config)
+        # without closing the gap remains
+        assert not result.skeleton[7:10, 7].any()
+
+
+class TestFillHoles:
+    def test_fill_holes_fills_enclosed_void(self):
+        ring = np.ones((16, 16), dtype=np.uint8)
+        ring[6:10, 6:10] = 0
+        ring[6:10, 6] = 1
+        ring[6:10, 9] = 1
+        ring[6, 6:10] = 1
+        ring[9, 6:10] = 1
+
+        config = PipelineConfig(
+            extraction=ExtractionConfig(fill_holes=True),
+            output=OutputConfig(),
+        )
+        result = analyze_binary_image(ring, "ring", config)
+        # preprocessed_binary should have the hole filled
+        assert result.preprocessed_binary is not None
+        assert result.preprocessed_binary[7:9, 7:9].all()
+
+
+class TestMaxHoleSize:
+    def test_max_hole_size_skips_large_holes(self):
+        ring = np.ones((32, 32), dtype=np.uint8)
+        ring[8:24, 8:24] = 0
+        ring[8:24, 8] = 1
+        ring[8:24, 23] = 1
+        ring[8, 8:24] = 1
+        ring[23, 8:24] = 1
+
+        config = PipelineConfig(
+            extraction=ExtractionConfig(fill_holes=True, max_hole_size=50),
+            output=OutputConfig(),
+        )
+        result = analyze_binary_image(ring, "ring", config)
+        # 15x15 = 225 pixels, above threshold, so preprocessed binary keeps it as a hole
+        assert result.preprocessed_binary is not None
+        assert not result.preprocessed_binary[9:23, 9:23].any()
+
+    def test_max_hole_size_fills_small_holes(self):
+        ring = np.ones((16, 16), dtype=np.uint8)
+        ring[7:9, 7:9] = 0
+        ring[7:9, 7] = 1
+        ring[7:9, 8] = 1
+        ring[7, 7:9] = 1
+        ring[8, 7:9] = 1
+
+        config = PipelineConfig(
+            extraction=ExtractionConfig(fill_holes=True, max_hole_size=50),
+            output=OutputConfig(),
+        )
+        result = analyze_binary_image(ring, "ring", config)
+        # 2x2 = 4 pixels, under threshold, so filled in preprocessed
+        assert result.preprocessed_binary is not None
+        assert result.preprocessed_binary[7:9, 7:9].all()
+
+    def test_max_hole_size_zero_fills_all(self):
+        ring = np.ones((16, 16), dtype=np.uint8)
+        ring[7:11, 7:11] = 0
+        ring[7:11, 7] = 1
+        ring[7:11, 10] = 1
+        ring[7, 7:11] = 1
+        ring[10, 7:11] = 1
+
+        config = PipelineConfig(
+            extraction=ExtractionConfig(fill_holes=True, max_hole_size=0),
+            output=OutputConfig(),
+        )
+        result = analyze_binary_image(ring, "ring", config)
+        # zero = unlimited, so 4x4 hole gets filled
+        assert result.preprocessed_binary is not None
+        assert result.preprocessed_binary[8:10, 8:10].all()
+
+
+class TestPreprocessedBinary:
+    def test_set_when_closing_active(self):
+        img = np.zeros((16, 16), dtype=np.uint8)
+        img[8, 4:12] = 1
+        config = PipelineConfig(
+            extraction=ExtractionConfig(closing_iterations=1),
+            output=OutputConfig(),
+        )
+        result = analyze_binary_image(img, "test", config)
+        assert result.preprocessed_binary is not None
+        assert result.preprocessed_binary.shape == img.shape
+
+    def test_set_when_fill_holes_active(self):
+        ring = np.ones((16, 16), dtype=np.uint8)
+        ring[7:9, 7:9] = 0
+        ring[7:9, 7] = 1
+        ring[7:9, 8] = 1
+        ring[7, 7:9] = 1
+        ring[8, 7:9] = 1
+        config = PipelineConfig(
+            extraction=ExtractionConfig(fill_holes=True),
+            output=OutputConfig(),
+        )
+        result = analyze_binary_image(ring, "test", config)
+        assert result.preprocessed_binary is not None
+
+    def test_none_when_preprocessing_disabled(self):
+        img = np.zeros((16, 16), dtype=np.uint8)
+        img[8, 4:12] = 1
+        config = PipelineConfig(
+            extraction=ExtractionConfig(),
+            output=OutputConfig(),
+        )
+        result = analyze_binary_image(img, "test", config)
+        assert result.preprocessed_binary is None
+
+    def test_none_when_show_preprocessed_checked_but_no_preprocessing(self):
+        img = np.zeros((16, 16), dtype=np.uint8)
+        img[8, 4:12] = 1
+        config = PipelineConfig(
+            extraction=ExtractionConfig(show_preprocessed=True),
+            output=OutputConfig(),
+        )
+        result = analyze_binary_image(img, "test", config)
+        assert result.preprocessed_binary is None
