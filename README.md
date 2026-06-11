@@ -14,7 +14,7 @@ uv sync --all-extras     # everything
 ## Napari
 
 ```sh
-uv sync --extra napari && uv run napari
+uv sync --extra napari && napari
 ```
 
 Open a `manual1` TIFF from the HRF folder, then run **Lee94 Thinning** from the VesSkel plugin menu to see the skeleton.
@@ -54,8 +54,8 @@ Add the appropriate line to your shell rc for persistent tab-completion.
 ## Tests
 
 ```sh
-uv sync --extra dev && uv run pytest                     # all tests
-uv sync --extra dev && uv run pytest -m "not slow"       # skip regression tests
+uv sync --extra dev && pytest                     # all tests
+uv sync --extra dev && pytest -m "not slow"       # skip regression tests
 ```
 
 - **2D regression** - thinning + feature extraction on all 45 HRF samples, compared against saved baselines
