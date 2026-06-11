@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
+from scipy import ndimage as ndi
 from skan import summarize
 
 from vesskel._utils import to_binary
@@ -34,6 +35,7 @@ class AnalysisResult:
     summary_features: dict[str, float]
     branch_records: list[dict[str, object]]
     radius_matrix: np.ndarray | None = None
+    preprocessed_binary: np.ndarray | None = None
 
 
 def analyze_binary_image(
@@ -53,6 +55,33 @@ def analyze_binary_image(
         Full pipeline configuration.
     """
     binary = to_binary(image)
+
+    # -- optional: morphological preprocessing -------------------------
+    preprocessed_binary: np.ndarray | None = None
+    if config.extraction.closing_iterations > 0:
+        structure = ndi.generate_binary_structure(binary.ndim, 1)
+        binary = ndi.binary_closing(
+            binary, structure=structure, iterations=config.extraction.closing_iterations
+        ).astype(binary.dtype)
+
+    if config.extraction.fill_holes:
+        before_fill = binary.copy()
+        binary = ndi.binary_fill_holes(binary).astype(binary.dtype)
+
+        if config.extraction.max_hole_size > 0:
+            diff = binary.astype(np.int8) - before_fill.astype(np.int8)
+            filled = diff > 0
+            if filled.any():
+                labels, n = ndi.label(filled)
+                sizes = np.bincount(labels.ravel())
+                big = sizes > config.extraction.max_hole_size
+                big[0] = False
+                revert = big[labels]
+                binary[revert] = 0
+
+    if config.extraction.closing_iterations > 0 or config.extraction.fill_holes:
+        preprocessed_binary = binary
+
     skeleton = lee94_thin(binary)
 
     if not skeleton.any():
@@ -129,4 +158,5 @@ def analyze_binary_image(
         summary_features=summary_features,
         branch_records=branch_records,
         radius_matrix=radius_matrix,
+        preprocessed_binary=preprocessed_binary,
     )
