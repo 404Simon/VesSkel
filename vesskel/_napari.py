@@ -48,6 +48,10 @@ class VesselAnalysisWidget(Container):
             include_vessel_radius: bool = False,
             junction_cleanup: bool = False,
             cleanup_threshold_factor: float = 2.5,
+            fill_holes: bool = False,
+            closing_iterations: int = 0,
+            max_hole_size: int = 0,
+            show_preprocessed: bool = False,
         ) -> None:
             return None
 
@@ -67,6 +71,24 @@ class VesselAnalysisWidget(Container):
                 "max": 10.0,
                 "step": 0.1,
             },
+            fill_holes={"annotation": bool, "value": False},
+            closing_iterations={
+                "annotation": int,
+                "value": 0,
+                "widget_type": "SpinBox",
+                "min": 0,
+                "max": 10,
+                "step": 1,
+            },
+            max_hole_size={
+                "annotation": int,
+                "value": 0,
+                "widget_type": "SpinBox",
+                "min": 0,
+                "max": 100000,
+                "step": 100,
+            },
+            show_preprocessed={"annotation": bool, "value": False},
         )
 
         # ---------- output parameters (magicgui) ----------
@@ -128,6 +150,23 @@ class VesselAnalysisWidget(Container):
 
         advanced_group.append(self.junction_cleanup_widget)
         advanced_group.append(self.cleanup_threshold_widget)
+
+        self.fill_holes_widget = extraction_gui.fill_holes
+        self.fill_holes_widget.label = "Fill holes in segmentation"
+
+        self.closing_iterations_widget = extraction_gui.closing_iterations
+        self.closing_iterations_widget.label = "Closing iterations"
+
+        self.max_hole_size_widget = extraction_gui.max_hole_size
+        self.max_hole_size_widget.label = "Max hole size (pixels)"
+
+        self.show_preprocessed_widget = extraction_gui.show_preprocessed
+        self.show_preprocessed_widget.label = "Show preprocessed binary layer"
+
+        advanced_group.append(self.fill_holes_widget)
+        advanced_group.append(self.closing_iterations_widget)
+        advanced_group.append(self.max_hole_size_widget)
+        advanced_group.append(self.show_preprocessed_widget)
 
         # ============================================================
         # Output Settings (CLI file export options)
@@ -202,6 +241,10 @@ class VesselAnalysisWidget(Container):
                 vessel_radius=self.include_vessel_radius_widget.value,
                 junction_cleanup=junction_cleanup,
                 cleanup_threshold_factor=self.cleanup_threshold_widget.value,
+                fill_holes=self.fill_holes_widget.value,
+                closing_iterations=self.closing_iterations_widget.value,
+                max_hole_size=self.max_hole_size_widget.value,
+                show_preprocessed=self.show_preprocessed_widget.value,
             ),
             output=OutputConfig(
                 write_skeleton_npy=self.write_skeleton_npy_widget.value,
@@ -221,6 +264,10 @@ class VesselAnalysisWidget(Container):
         self.include_vessel_radius_widget.value = e.vessel_radius
         self.junction_cleanup_widget.value = e.junction_cleanup
         self.cleanup_threshold_widget.value = e.cleanup_threshold_factor
+        self.fill_holes_widget.value = e.fill_holes
+        self.closing_iterations_widget.value = e.closing_iterations
+        self.max_hole_size_widget.value = e.max_hole_size
+        self.show_preprocessed_widget.value = e.show_preprocessed
 
         o = config.output
         self.write_skeleton_npy_widget.value = o.write_skeleton_npy
@@ -298,6 +345,19 @@ class VesselAnalysisWidget(Container):
                     "labels",
                 )
             )
+
+            # -- optional: show preprocessed binary layer ----------------
+            if (
+                pipeline_config.extraction.show_preprocessed
+                and result.preprocessed_binary is not None
+            ):
+                self.viewer.add_layer(
+                    Layer.create(
+                        result.preprocessed_binary,
+                        {"name": f"{img.name}_preprocessed"},
+                        "labels",
+                    )
+                )
 
             for data, meta, layer_type in result.layers:
                 try:

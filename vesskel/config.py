@@ -31,6 +31,10 @@ class ExtractionConfig:
     vessel_radius: bool = False
     junction_cleanup: bool = False
     cleanup_threshold_factor: float = 2.5
+    closing_iterations: int = 0
+    fill_holes: bool = False
+    max_hole_size: int = 0
+    show_preprocessed: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -41,6 +45,10 @@ class ExtractionConfig:
             "vessel_radius": self.vessel_radius,
             "junction_cleanup": self.junction_cleanup,
             "cleanup_threshold_factor": self.cleanup_threshold_factor,
+            "closing_iterations": self.closing_iterations,
+            "fill_holes": self.fill_holes,
+            "max_hole_size": self.max_hole_size,
+            "show_preprocessed": self.show_preprocessed,
         }
 
     @classmethod
@@ -54,6 +62,10 @@ class ExtractionConfig:
             vessel_radius=data.get("vessel_radius", False),
             junction_cleanup=data.get("junction_cleanup", False),
             cleanup_threshold_factor=data.get("cleanup_threshold_factor", 2.5),
+            closing_iterations=data.get("closing_iterations", 0),
+            fill_holes=data.get("fill_holes", False),
+            max_hole_size=data.get("max_hole_size", 0),
+            show_preprocessed=data.get("show_preprocessed", False),
         )
 
 
