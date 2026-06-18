@@ -22,6 +22,11 @@ References
 import numpy as np
 from numba import njit, prange
 
+# ---------------------------------------------------------------------------
+# Lookup tables for Euler characteristic computation (Lee94 Table 2).
+# _EULER_ARR maps the 256 possible 3x3x3 configurations to their Euler
+# delta values.  Only odd indices (center=1) are populated; evens are 0.
+# ---------------------------------------------------------------------------
 _EULER_ARR = np.array(
     [
         1,
@@ -159,6 +164,12 @@ _EULER_ARR = np.array(
 _EULER_LUT = np.zeros(256, dtype=np.int32)
 _EULER_LUT[1::2] = _EULER_ARR
 
+# ---------------------------------------------------------------------------
+# Octant masks for Euler-invariant check.
+# Each row lists 7 neighbour indices (in the flat 27-element neighbourhood)
+# that form one octant of the 3x3x3 cube. The octant's bits are packed into
+# a number used to index _EULER_LUT.
+# ---------------------------------------------------------------------------
 _OCTANTS = np.array(
     [
         [2, 1, 11, 10, 5, 4, 14],
@@ -173,8 +184,10 @@ _OCTANTS = np.array(
     dtype=np.int64,
 )
 
+# Six border directions processed in order: -z, z, -y, y, -x, x.
 _BORDERS = np.array([4, 3, 2, 1, 5, 6], dtype=np.int64)
 
+# Offsets for all 26 neighbours of a voxel (excluding the centre).
 _OFFSETS_26 = np.array(
     [
         (-1, -1, -1),
@@ -207,6 +220,15 @@ _OFFSETS_26 = np.array(
     dtype=np.int8,
 )
 
+# ---------------------------------------------------------------------------
+# Pre-computed 26-neighbour adjacency graph.
+# _ADJ26[i, j] == 1  iff voxels i and j (in the 26-neighbour set) are
+#    themselves 26-adjacent.
+# _ADJ26_LIST[i, :k]  holds the list of adjacency neighbours for voxel i.
+# _ADJ26_COUNT[i]     is the number of such neighbours (= k).
+#
+# These are used by _is_simple_point to run DFS on the 26-neighbour graph.
+# ---------------------------------------------------------------------------
 _ADJ26 = np.zeros((26, 26), dtype=np.uint8)
 for _i in range(26):
     for _j in range(26):
@@ -228,6 +250,7 @@ for _i in range(26):
             _count += 1
     _ADJ26_COUNT[_i] = _count
 
+# Offsets for the six face-neighbour directions (and identity at index 0).
 _BORDER_OFFSETS = np.array(
     [
         (0, 0, 0),
@@ -242,8 +265,12 @@ _BORDER_OFFSETS = np.array(
 )
 
 
+# ======================== Low-level predicates ===========================
+
+
 @njit(cache=True)
 def _get_neighborhood(img, p, r, c, neighborhood):
+    """Fill ``neighborhood`` with the 27 voxels of the 3×3×3 cube at (p,r,c)."""
     idx = 0
     for dp in range(-1, 2):
         for dr in range(-1, 2):
@@ -254,6 +281,7 @@ def _get_neighborhood(img, p, r, c, neighborhood):
 
 @njit(cache=True)
 def _is_endpoint(neighbors):
+    """A voxel is an endpoint if exactly 2 of its 27 neighbours are foreground."""
     s = 0
     for j in range(27):
         s += neighbors[j]
@@ -262,6 +290,9 @@ def _is_endpoint(neighbors):
 
 @njit(cache=True)
 def _is_euler_invariant(neighbors):
+    """Return True if removing the centre voxel preserves the Euler
+    characteristic.  Packs each octant into a bit mask, then looks up the
+    Euler delta from _EULER_LUT."""
     euler_char = 0
     for octant in range(8):
         n = 1
@@ -274,8 +305,16 @@ def _is_euler_invariant(neighbors):
 
 
 @njit(cache=True)
-def _is_simple_point(neighbors):
-    cube = np.empty(26, dtype=np.uint8)
+def _is_simple_point(neighbors, cube, visited, stack):
+    """Return True if the centre voxel is a *simple point* - i.e. removing it
+    does not change the topology of the foreground.
+
+    Works by extracting the 26 exterior voxels into ``cube``, then counting
+    connected components on the 26-adjacency graph via DFS.  If there is
+    exactly one connected component among the foreground neighbours, the
+    point is simple.
+
+    ``cube``, ``visited``, ``stack`` are pre-allocated scratch buffers."""
     j = 0
     for i in range(27):
         if i == 13:
@@ -283,8 +322,7 @@ def _is_simple_point(neighbors):
         cube[j] = neighbors[i]
         j += 1
 
-    visited = np.zeros(26, dtype=np.uint8)
-    stack = np.empty(26, dtype=np.int64)
+    visited[:] = 0
     components = 0
 
     for i in range(26):
@@ -314,31 +352,66 @@ def _is_simple_point(neighbors):
     return True
 
 
-@njit(cache=True)
+# ====================== Candidate finding and marking =====================
+
+
+@njit(cache=True, parallel=True)
 def _find_simple_point_candidates(img, curr_border, candidates):
-    count = 0
+    """Scan the volume for foreground voxels on the face given by
+    ``_BORDER_OFFSETS[curr_border]`` and write their coordinates into
+    ``candidates``.
+
+    Two-pass parallel strategy (avoids a shared counter across threads):
+      1. Each z-slice counts its candidates in parallel.
+      2. A prefix sum computes write offsets.
+      3. Each z-slice fills its contiguous segment of ``candidates``.
+    """
     dp = int(_BORDER_OFFSETS[curr_border, 0])
     dr = int(_BORDER_OFFSETS[curr_border, 1])
     dc = int(_BORDER_OFFSETS[curr_border, 2])
 
-    for p in range(1, img.shape[0] - 1):
-        for r in range(1, img.shape[1] - 1):
-            for c in range(1, img.shape[2] - 1):
-                if img[p, r, c] != 1:
-                    continue
-                if img[p + dp, r + dr, c + dc] != 0:
-                    continue
+    P = img.shape[0] - 1
+    R = img.shape[1] - 1
+    C = img.shape[2] - 1
+    num_slices = P - 1
 
-                candidates[count, 0] = p
-                candidates[count, 1] = r
-                candidates[count, 2] = c
-                count += 1
+    slice_counts = np.zeros(num_slices, dtype=np.int64)
+    for p in prange(1, P):
+        local_count = 0
+        for r in range(1, R):
+            for c in range(1, C):
+                if img[p, r, c] == 1 and img[p + dp, r + dr, c + dc] == 0:
+                    local_count += 1
+        slice_counts[p - 1] = local_count
 
-    return count
+    offsets = np.zeros(num_slices + 1, dtype=np.int64)
+    for p_idx in range(num_slices):
+        offsets[p_idx + 1] = offsets[p_idx] + slice_counts[p_idx]
+    total = offsets[num_slices]
+
+    for p in prange(1, P):
+        idx = offsets[p - 1]
+        for r in range(1, R):
+            for c in range(1, C):
+                if img[p, r, c] == 1 and img[p + dp, r + dr, c + dc] == 0:
+                    candidates[idx, 0] = p
+                    candidates[idx, 1] = r
+                    candidates[idx, 2] = c
+                    idx += 1
+
+    return total
 
 
 @njit(cache=True, parallel=True)
 def _mark_removable_candidates(img, candidates, num_candidates, removable):
+    """For each candidate voxel, check the three Lee94 criteria in order:
+      1. not an endpoint,
+      2. Euler-characteristic invariant,
+      3. simple point.
+
+    Voxels that pass all three are marked as removable (1).  The checks
+    short-circuit: failure on any earlier criterion skips the later ones.
+    """
     for i in prange(num_candidates):
         p = candidates[i, 0]
         r = candidates[i, 1]
@@ -347,18 +420,44 @@ def _mark_removable_candidates(img, candidates, num_candidates, removable):
         neighborhood = np.empty(27, dtype=np.uint8)
         _get_neighborhood(img, p, r, c, neighborhood)
 
+        cube = np.empty(26, dtype=np.uint8)
+        visited = np.zeros(26, dtype=np.uint8)
+        stack = np.empty(26, dtype=np.int64)
+
         can_remove = (
             (not _is_endpoint(neighborhood))
             and _is_euler_invariant(neighborhood)
-            and _is_simple_point(neighborhood)
+            and _is_simple_point(neighborhood, cube, visited, stack)
         )
         removable[i] = 1 if can_remove else 0
 
 
+# ======================== Sequential removal pass =========================
+
+
 @njit(cache=True)
-def _apply_removals(img, candidates, num_candidates, removable):
+def _apply_removals(img, candidates, num_candidates, removable, removed_epoch, epoch):
+    """Sequentially remove voxels marked as removable, re-checking simplicity
+    only when a neighbour was *already removed in the same batch*.
+
+    The naive approach would re-read the neighbourhood and re-run
+    _is_simple_point for *every* candidate (which is expensive).  However,
+    _mark_removable_candidates already verified that each candidate is simple
+    *before any removals in this batch*.  If none of a candidate's 26
+    neighbours have been removed yet in this batch, the old verification
+    is still valid and we can skip the re-check.
+
+    ``removed_epoch`` is a 3-D stamp array - an epoch counter written at the
+    position of every voxel removed in this call.  Checking whether a
+    neighbour was removed is an O(26) stamp lookup, not an O(k) scan over
+    previously removed coordinates.  The array is never reset; epochs are
+    monotonically increasing so stale stamps are invisible.
+    """
     removed = 0
     neighborhood = np.empty(27, dtype=np.uint8)
+    cube = np.empty(26, dtype=np.uint8)
+    visited = np.zeros(26, dtype=np.uint8)
+    stack = np.empty(26, dtype=np.int64)
     for i in range(num_candidates):
         if removable[i] == 0:
             continue
@@ -367,20 +466,48 @@ def _apply_removals(img, candidates, num_candidates, removable):
         c = candidates[i, 2]
         if img[p, r, c] != 1:
             continue
-        _get_neighborhood(img, p, r, c, neighborhood)
-        if _is_simple_point(neighborhood):
-            img[p, r, c] = 0
-            removed += 1
+
+        neighbor_removed = False
+        for dp in range(-1, 2):
+            for dr in range(-1, 2):
+                for dc in range(-1, 2):
+                    if dp == 0 and dr == 0 and dc == 0:
+                        continue
+                    if removed_epoch[p + dp, r + dr, c + dc] == epoch:
+                        neighbor_removed = True
+                        break
+                if neighbor_removed:
+                    break
+            if neighbor_removed:
+                break
+
+        if neighbor_removed:
+            _get_neighborhood(img, p, r, c, neighborhood)
+            if not _is_simple_point(neighborhood, cube, visited, stack):
+                continue
+
+        img[p, r, c] = 0
+        removed_epoch[p, r, c] = epoch
+        removed += 1
     return removed
 
 
 @njit(cache=True)
 def _compute_thin_image(img):
+    """Iteratively peel surface voxels from a padded 3D binary volume until
+    a 1-voxel-thin skeleton remains.
+
+    The outer loop processes all six face directions sequentially.  A border
+    direction is considered "stable" when no removable voxel was found on
+    that face during the pass.  When all six are stable the skeleton is done.
+    """
     num_borders = 6
     unchanged_borders = 0
 
     candidates = np.empty((img.size, 3), dtype=np.int32)
     removable = np.empty(img.size, dtype=np.uint8)
+    removed_epoch = np.zeros(img.shape, dtype=np.uint32)
+    epoch = 0
 
     while unchanged_borders < num_borders:
         unchanged_borders = 0
@@ -393,7 +520,15 @@ def _compute_thin_image(img):
                 continue
 
             _mark_removable_candidates(img, candidates, num_candidates, removable)
-            removed = _apply_removals(img, candidates, num_candidates, removable)
+            epoch += 1
+            removed = _apply_removals(
+                img,
+                candidates,
+                num_candidates,
+                removable,
+                removed_epoch,
+                epoch,
+            )
 
             if removed == 0:
                 unchanged_borders += 1
@@ -424,7 +559,8 @@ def thin_3d(img):
 
     work = (img > 0).astype(np.uint8, copy=False)
     padded = np.zeros(
-        (work.shape[0] + 2, work.shape[1] + 2, work.shape[2] + 2), dtype=np.uint8
+        (work.shape[0] + 2, work.shape[1] + 2, work.shape[2] + 2),
+        dtype=np.uint8,
     )
     padded[1:-1, 1:-1, 1:-1] = work
 
