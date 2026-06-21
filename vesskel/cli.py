@@ -218,6 +218,8 @@ def _run_parallel(
     errors: list[tuple[int, str, Exception]] = []
     ctx = mp.get_context("spawn")
 
+    proc = "process" if jobs == 1 else "processes"
+    print(f"Spawning {jobs} worker {proc}...", flush=True)
     with ProcessPoolExecutor(max_workers=jobs, mp_context=ctx) as ex:
         futures = {
             ex.submit(process_one, p, sn, out_dir, config): (idx, p.name)
