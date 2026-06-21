@@ -26,8 +26,8 @@ Inside the **Analyze Vessels** widget, tune extraction settings and use **Save C
 Use the same JSON preset exported from napari to batch-process images.
 
 ```sh
-vesskel config-init --out config.json
-vesskel validate-config --config config.json
+vesskel init config.json
+vesskel validate config.json
 vesskel run --input HRF/manual1 --config config.json --out outputs
 ```
 

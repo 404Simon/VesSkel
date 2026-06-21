@@ -470,7 +470,7 @@ class TestMainCommands:
         from vesskel.cli import main
 
         monkeypatch.setattr(
-            sys, "argv", ["vesskel", "config-init", "--out", str(tmp_path / "cfg.json")]
+            sys, "argv", ["vesskel", "init", str(tmp_path / "cfg.json")]
         )
         exit_code = main()
         assert exit_code == 0
@@ -512,7 +512,7 @@ class TestMainCommands:
         config_path.write_text(json.dumps(config.to_dict(), indent=2))
 
         monkeypatch.setattr(
-            sys, "argv", ["vesskel", "validate-config", "--config", str(config_path)]
+            sys, "argv", ["vesskel", "validate", str(config_path)]
         )
         exit_code = main()
         assert exit_code == 0
