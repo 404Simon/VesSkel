@@ -68,7 +68,7 @@ def _make_parser() -> argparse.ArgumentParser:
         "config-init",
         help="Create a starter config JSON.",
     )
-    init_parser.add_argument("--out", required=True, help="Output config path.")
+    init_parser.add_argument("out", nargs="?", default="vesskel.json", help="Output config path.")
 
     validate_parser = subparsers.add_parser(
         "validate-config",
