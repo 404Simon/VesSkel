@@ -117,6 +117,10 @@ def analyze_binary_image(
         for key, arr in per_seg.items():
             branch_data[key] = arr
 
+        if radius_stats is not None:
+            radius_stats["mean_segment_volume"] = float(np.nanmean(branch_data["volume"]))
+            radius_stats["mean_surface_area"] = float(np.nanmean(branch_data["surface_area"]))
+
     if not branch_data.empty:
         euclidean = branch_data["euclidean-distance"].to_numpy(dtype=float)
         branch_dist = branch_data["branch-distance"].to_numpy(dtype=float)

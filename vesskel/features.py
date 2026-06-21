@@ -198,6 +198,8 @@ def per_segment_radii(
     std_r = np.full(n, np.nan, dtype=np.float64)
     min_r = np.full(n, np.nan, dtype=np.float64)
     max_r = np.full(n, np.nan, dtype=np.float64)
+    volume = np.full(n, np.nan, dtype=np.float64)
+    surface_area = np.full(n, np.nan, dtype=np.float64)
 
     for i in range(n):
         coords = graph.path_coordinates(i)
@@ -208,6 +210,8 @@ def per_segment_radii(
             std_r[i] = np.std(radii)
             min_r[i] = np.min(radii)
             max_r[i] = np.max(radii)
+            volume[i] = np.pi * float(np.sum(radii**2))
+            surface_area[i] = 2.0 * np.pi * float(np.sum(radii))
 
     return {
         "mean_radius": mean_r,
@@ -218,6 +222,8 @@ def per_segment_radii(
         "std_diameter": 2.0 * std_r,
         "min_diameter": 2.0 * min_r,
         "max_diameter": 2.0 * max_r,
+        "volume": volume,
+        "surface_area": surface_area,
     }
 
 
@@ -254,6 +260,8 @@ _EMPTY_FEATURES: dict[str, float] = {
     "max_diameter": 0.0,
     "vessel_area": 0.0,
     "vessel_area_fraction": 0.0,
+    "mean_segment_volume": 0.0,
+    "mean_surface_area": 0.0,
 }
 
 
@@ -367,6 +375,8 @@ def extract_vessel_features(
             "std_diameter": 0.0,
             "min_diameter": 0.0,
             "max_diameter": 0.0,
+            "mean_segment_volume": 0.0,
+            "mean_surface_area": 0.0,
         }
 
     return {

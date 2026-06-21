@@ -199,6 +199,8 @@ class TestExtractVesselFeatures:
             "std_diameter": 1.0,
             "min_diameter": 4.0,
             "max_diameter": 10.0,
+            "mean_segment_volume": 0.0,
+            "mean_surface_area": 0.0,
         }
         features = extract_vessel_features(
             simple_cross,
