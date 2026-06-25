@@ -32,9 +32,59 @@ vesskel run --input HRF/manual1 --config config.json --out outputs
 ```
 
 CLI outputs:
+
 - `outputs/summary.csv` with one feature row per image
 - Optional per-image skeleton outputs (default: `.npy`)
 - Optional per-image branch tables when `output.write_branch_csv=true`
+
+## Configuration
+
+Extraction and output settings are defined in a JSON config file (e.g. the one exported from napari or written by hand).
+
+```json
+{
+  "schema_version": 2,
+  "extraction": {
+    "branches": false,
+    "branch_text": false,
+    "summary": true,
+    "fractal_dimension": false,
+    "vessel_radius": false,
+    "junction_cleanup": false,
+    "cleanup_threshold_factor": 2.5,
+    "closing_iterations": 0,
+    "fill_holes": false,
+    "max_hole_size": 0,
+    "show_preprocessed": false
+  },
+  "output": {
+    "write_skeleton_npy": true,
+    "write_skeleton_png": false,
+    "write_summary_csv": true,
+    "write_branch_csv": false,
+    "write_radius": false
+  }
+}
+```
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `extraction.branches` | bool | `false` | Extract per-branch features for CSV export or napari visualization |
+| `extraction.branch_text` | bool | `false` | Display branch ID, length, and tortuosity labels on the napari branch layer |
+| `extraction.summary` | bool | `false` | Compute summary features  |
+| `extraction.fractal_dimension` | bool | `false` | Compute fractal dimension of the skeleton |
+| `extraction.vessel_radius` | bool | `false` | Estimate vessel radius using EDT from the segmentation |
+| `extraction.junction_cleanup` | bool | `false` | Clean up ambiguous junction pixels after thinning |
+| `extraction.cleanup_threshold_factor` | float | `2.5` | Sensitivity for junction cleanup (higher = larger cycles get collapsed) |
+| `extraction.closing_iterations` | int | `0` | Morphological closing iterations applied before thinning (0 = disabled) |
+| `extraction.fill_holes` | bool | `false` | Fill holes in the binary segmentation before thinning |
+| `extraction.max_hole_size` | int | `0` | Maximum hole area (px) to fill when `fill_holes` is true; 0 = fill all |
+| `extraction.show_preprocessed` | bool | `false` | Show preprocessed binary layer (after closing and hole filling) in the napari viewer |
+| `output.write_skeleton_npy` | bool | `true` | Save skeleton as `.npy` (NumPy array) per image |
+| `output.write_skeleton_png` | bool | `false` | Save binary skeleton mask as `.png` per image |
+| `output.write_summary_csv` | bool | `true` | Write aggregated per-image features to `summary.csv` |
+| `output.write_branch_csv` | bool | `false` | Write per-branch CSV tables (requires `extraction.branches`) |
+| `output.write_radius` | bool | `false` | Write per-pixel radius matrix as `.npy` (requires `extraction.vessel_radius`) |
 
 ### Shell completions
 
@@ -69,6 +119,7 @@ First run (or `--update-baseline`) generates baselines in `tests/skeletons/` and
 This project uses the High-Resolution Fundus (HRF) Image Database, established by a collaborative research group to support comparative studies on automatic segmentation algorithms on retinal fundus images.
 
 The database contains 45 images total:
+
 - 15 images of healthy patients
 - 15 images of patients with diabetic retinopathy
 - 15 images of glaucomatous patients
@@ -84,4 +135,3 @@ Binary gold standard vessel segmentation images and field of view (FOV) masks ar
 The HRF dataset is released under the **Creative Commons 4.0 Attribution License**.
 
 For more information, visit the [HRF Image Database](https://www5.cs.fau.de/research/data/fundus-images/).
-
