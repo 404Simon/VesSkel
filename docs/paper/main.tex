@@ -3,22 +3,21 @@
 \input{preamble} % If needed, you can load additional packages or
 % define your own macros in the preamble.tex file
 
-\title{[Title of thesis or report]}
-\author{[Author name]}
+\title{VesSkel: Vessel Skeletonization and Graph-Based Phenotype Analysis in
+Retinal Fundus Images}
+\author{Simon Wittmann}
 
 \affil{
-  [Master's / Bachelor's] thesis in [your study degree]\\ % For theses
-  Direct supervisor: [your direct thesis supervisor]\\ % For theses,
+  % [Master's / Bachelor's] thesis in [your study degree]\\ % For theses
+  % Direct supervisor: [your direct thesis supervisor]\\ % For theses,
   % delete if directly supervised by David
-  Supervising professor: Prof. Dr. David B. Blumenthal\\ % For theses
-  %Project report\\ % For project reports in the module Project
-  % Biomedical Network Science
+  % Supervising professor: Prof. Dr. David B. Blumenthal\\ % For theses
+  Project report\\ % For project reports in the module Project
+  Biomedical Network Science\\
   %Student paper\\ % For student papers in the module Network Medicine
-  %Module title: [either Project Biomedical Network Science or
-  % Network Medicine]\\% For project reports and student papers
-  %Semester: [specify semster during which you attended the
-  % module]\\% For project reports and student papers
-  Matriculation number: [your matriculation number]\\
+  Module title: Project Biomedical Network Science\\
+  Semester: SS 2026\\
+  Matriculation number: 23760671\\
   Biomedical Network Science Lab, Department Artificial Intelligence in
 Biomedical Engineering, Friedrich-Alexander-Universität Erlangen-Nürnberg}
 
@@ -45,212 +44,358 @@ Biomedical Engineering, Friedrich-Alexander-Universität Erlangen-Nürnberg}
 
 \section{Introduction}\label{sec:introduction}
 
-This template provides an example of a standard structure that is
-used for many scientific articles. Depending on the content you
-present in your thesis, report, or student paper, it can make sense
-to use this structure or to deviate from it. The only exceptions are
-the sections \Cref{sec:code,sec:data}. These sections are mandatory
-and must be filled according to the provided descriptions. Moreover,
-you must fill-in the AI usage declaration in
-\Cref{sec:ai-declaration} and date and sign the declaration of
-academic integrity in \Cref{sec:declaration}.
+% This template provides an example of a standard structure that is
+% used for many scientific articles. Depending on the content you
+% present in your thesis, report, or student paper, it can make sense
+% to use this structure or to deviate from it. The only exceptions are
+% the sections \Cref{sec:code,sec:data}. These sections are mandatory
+% and must be filled according to the provided descriptions. Moreover,
+% you must fill-in the AI usage declaration in
+% \Cref{sec:ai-declaration} and date and sign the declaration of
+% academic integrity in \Cref{sec:declaration}.
+%
+% In the introduction, you provide the motivation of your work, pose
+% your research question, and describe the (medical and technical)
+% background as well as the related work (if these parts are rather
+%   extensive they can also be put in dedicated ``Background'' and/or
+% ``Related work'' sections). Make sure that the contribution of
+% \emph{your} work becomes clear in the introduction: What does it add
+% to the existing body of literature/knowledge? Why is it new and/or
+% interesting? Conclude the introduction by delineating the structure
+% of your thesis, i.\,e., by introducing the structure of the remaining
+% sections. The introduction should be internally unstructured (no
+% subsections inside the introduction).
 
-In the introduction, you provide the motivation of your work, pose
-your research question, and describe the (medical and technical)
-background as well as the related work (if these parts are rather
-  extensive they can also be put in dedicated ``Background'' and/or
-``Related work'' sections). Make sure that the contribution of
-\emph{your} work becomes clear in the introduction: What does it add
-to the existing body of literature/knowledge? Why is it new and/or
-interesting? Conclude the introduction by delineating the structure
-of your thesis, i.\,e., by introducing the structure of the remaining
-sections. The introduction should be internally unstructured (no
-subsections inside the introduction).
+- hrf als motivation: diabetes \& glaucoma diagnosis
+- limitations of existing vessel analysis tools
+- überleitung zu need for FOSS package mit nicer ux (napari,
+reproducible config, cli, fast)
+- ?? Related work: vessel segmentation, skeletonization (Lee94,
+skimage), phenotype analysis
+- General Tool Comparison table (nicht features)
+- evtl. lee und skan als basis erwähnen
+- vorstellung vesskel
+- (1) Numba-parallelized 2D/3D Lee94 implementation, (2) integrated
+feature extraction pipeline, (3) napari plugin + CLI, (4) application
+to HRF dataset with phenotype analysis
+- struktur des papers
 
 \section{Results}\label{sec:results}
 
-\subsection{Structure of the Results section}\label{sec:results:overview}
+% \subsection{Structure of the Results section}\label{sec:results:overview}
+%
+% The first subsection of the \nameref{sec:results} is often used to
+% provide a high-level overview of the entire work. This is typically
+% supported by a visual overview in \Cref{fig:overview-placeholder}.
+% The overview should enable readers to understand the material
+% presented in the subsequent subsections of the \nameref{sec:results}
+% section. The methodological details are then explained in a dedicated
+% \nameref{sec:methods} section.
+%
+% \begin{figure}[htb]
+%   \centering
+%   \includegraphics[width=0.5\linewidth]{example-image-a}
+%   \caption{Placeholder for a figure that visualizes the entire study.}
+%   \label{fig:overview-placeholder}
+% \end{figure}
+%
+% The remainder of the \nameref{sec:results} is typically structured
+% into topical subsections. As a rule of thumb, each subsection should
+% present one key finding, supported by one data figure. Of course, you
+% can divert from this rule of thumb if it does not fit for your work.
+%
+% \subsection{Figures}\label{sec:results:figures}
+%
+% An example of a well-made data figure is shown in
+% \Cref{fig:data-figure}. Please ensure that font sizes are large
+% enough, that all colors are resolved with legends, and that all $x$-
+% and $y$-axes are labeled. If possible, use vector graphics to avoid
+% problems due to low resolutions. Add labels to the individual panels
+% shown in your figure, which you can then use in your textual
+% descriptions. E.\,g.: ``For the multi-class datasets LT1 and LT2
+% (\Cref{fig:data-figure}B, C), differences in performance between the
+% MLP and SOM classifiers are much more pronounced than for the binary
+% datasets LT1b and LT2b (\Cref{fig:data-figure}E, F)''. Place the
+% figures in the vicinity of the corresponding text by choosing the
+% appropriate placement option. For instance, the placement option
+% \verb|htb| used for \Cref{fig:data-figure} tells \LaTeX{} that the
+% figure should be placed ``here'' (\verb|h|, preferred choice), at the
+% top (\verb|t|, second choice), or at the bottom (\verb|b|, third choice).
+%
+% \begin{figure}[htb]
+%   \centering
+%   \includegraphics[width=\linewidth]{figures/example_figure.pdf}
+%   \caption{Example of a data figure. Figure captions are placed below
+%   the figures.}
+%   \label{fig:data-figure}
+% \end{figure}
+%
+% \subsection{References}\label{sec:results:references}
+%
+% References should be included using \verb|\textcite{ID}| and
+% \verb|\cite{ID}| as in the following examples, (\verb|ID| is the
+% handle of a publication defined in the file ``references.bib''). This
+% produces references as in the following examples:
+% \textcite{mcinnes2020umap} presented UMAP, a widely used
+% dimensionality reduction method. scGPT \cite{Cui2024-km} is one of
+% the earliest foundation models for single-cell RNA sequencing data.
+%
+% \subsection{Tables}\label{sec:results:tables}
+%
+% \begin{table}[htb]
+%   \centering
+%   \caption{Caption of \Cref{tab:supp-table}. Table captions are
+%   placed above the tables.}
+%   \label{tab:supp-table}
+%   \begin{tabularx}{\linewidth}{lllX}
+%     \toprule
+%     Dataset & \# Samples & \# Features & Target variables \\
+%     \midrule
+%     D1 & 9473 & 187 & Five-year survival rate (binary) and overall
+%     survival times (numeric)\\
+%     D2 & 94734 & 1837 & Five-year survival rate (binary) and overall
+%     survival times (numeric)\\
+%     \bottomrule
+%   \end{tabularx}
+% \end{table}
+%
+% Nicely formatting tables with \LaTeX{} is a bit tricky, but it is
+% possible. \Cref{tab:supp-table} shows an example that uses an
+% \verb|X| column from the \verb|tabularx| environment for cells with
+% automatic line break that adapt to the available horizontal space, as
+% well as the \verb|\toprule|, \verb|\midrule|, and \verb|\bottomrule|
+% commands from the \verb|booktabs| package. As for figures, use
+% appropriate placement options to ensure that tables appear close to
+% the corresponding text.
 
-The first subsection of the \nameref{sec:results} is often used to
-provide a high-level overview of the entire work. This is typically
-supported by a visual overview in \Cref{fig:overview-placeholder}.
-The overview should enable readers to understand the material
-presented in the subsequent subsections of the \nameref{sec:results}
-section. The methodological details are then explained in a dedicated
-\nameref{sec:methods} section.
+\subsection{Overview of the VesSkel Pipeline}\label{sec:results:overview}
+vorstellung des high-level workflow:
 
-\begin{figure}[htb]
-  \centering
-  \includegraphics[width=0.5\linewidth]{example-image-a}
-  \caption{Placeholder for a figure that visualizes the entire study.}
-  \label{fig:overview-placeholder}
-\end{figure}
+1. binary mask
+2. (optional) preprocessing (closing, hole-filling)
+3. Lee thinning
+4. (optional) junction cleanup
+5. graph construction
+6. feature extraction
 
-The remainder of the \nameref{sec:results} is typically structured
-into topical subsections. As a rule of thumb, each subsection should
-present one key finding, supported by one data figure. Of course, you
-can divert from this rule of thumb if it does not fit for your work.
+pipeline verfügbar als napari plugin (interactive, parameter tuning,
+config save/load) und CLI für batching
 
-\subsection{Figures}\label{sec:results:figures}
+- Figure: pipeline diagram + evtl. example input/skeleton/branches/features
 
-An example of a well-made data figure is shown in
-\Cref{fig:data-figure}. Please ensure that font sizes are large
-enough, that all colors are resolved with legends, and that all $x$-
-and $y$-axes are labeled. If possible, use vector graphics to avoid
-problems due to low resolutions. Add labels to the individual panels
-shown in your figure, which you can then use in your textual
-descriptions. E.\,g.: ``For the multi-class datasets LT1 and LT2
-(\Cref{fig:data-figure}B, C), differences in performance between the
-MLP and SOM classifiers are much more pronounced than for the binary
-datasets LT1b and LT2b (\Cref{fig:data-figure}E, F)''. Place the
-figures in the vicinity of the corresponding text by choosing the
-appropriate placement option. For instance, the placement option
-\verb|htb| used for \Cref{fig:data-figure} tells \LaTeX{} that the
-figure should be placed ``here'' (\verb|h|, preferred choice), at the
-top (\verb|t|, second choice), or at the bottom (\verb|b|, third choice).
+\subsection{Skeletonization Performance}\label{sec:results:performance}
 
-\begin{figure}[htb]
-  \centering
-  \includegraphics[width=\linewidth]{figures/example_figure.pdf}
-  \caption{Example of a data figure. Figure captions are placed below
-  the figures.}
-  \label{fig:data-figure}
-\end{figure}
+zahlen und fakten
 
-\subsection{References}\label{sec:results:references}
+- 2D und 3D validation on HRF dataset und brain; skimage als base und
+regression tests against pre-computed baselines stellen korrektheit sicher
+- numba-parallelized: x speedup vs. pure-Python reference (initiale
+naive iml hat ja iwie 20min für HRF gebraucht)
+- single vs multi thread -> scalability within image aber auch über
+batch von images demonstrieren?
 
-References should be included using \verb|\textcite{ID}| and
-\verb|\cite{ID}| as in the following examples, (\verb|ID| is the
-handle of a publication defined in the file ``references.bib''). This
-produces references as in the following examples:
-\textcite{mcinnes2020umap} presented UMAP, a widely used
-dimensionality reduction method. scGPT \cite{Cui2024-km} is one of
-the earliest foundation models for single-cell RNA sequencing data.
+\subsection{Skeleton and Graph Features}\label{sec:results:features}
 
-\subsection{Tables}\label{sec:results:tables}
+- Tabelle in appendix und nur "summary" der tools erwähnen -> anzahl
+gesamtfeatures aller tools und nur in vesskel eingebaute features als
+"relevant" erwähnen und grobe unterteilung hier erwähnen:
+- topology: nodes, edges, endpoints, bifurcations
+- morphology: lengths, tortuosity, radii, fractal dimension, HGU
+- density: vessel area fraction
 
-\begin{table}[htb]
-  \centering
-  \caption{Caption of \Cref{tab:supp-table}. Table captions are
-  placed above the tables.}
-  \label{tab:supp-table}
-  \begin{tabularx}{\linewidth}{lllX}
-    \toprule
-    Dataset & \# Samples & \# Features & Target variables \\
-    \midrule
-    D1 & 9473 & 187 & Five-year survival rate (binary) and overall
-    survival times (numeric)\\
-    D2 & 94734 & 1837 & Five-year survival rate (binary) and overall
-    survival times (numeric)\\
-    \bottomrule
-  \end{tabularx}
-\end{table}
+\subsection{Phenotype Differentiation}\label{sec:results:phenodiff}
 
-Nicely formatting tables with \LaTeX{} is a bit tricky, but it is
-possible. \Cref{tab:supp-table} shows an example that uses an
-\verb|X| column from the \verb|tabularx| environment for cells with
-automatic line break that adapt to the available horizontal space, as
-well as the \verb|\toprule|, \verb|\midrule|, and \verb|\bottomrule|
-commands from the \verb|booktabs| package. As for figures, use
-appropriate placement options to ensure that tables appear close to
-the corresponding text.
+- ANOVA: which features discriminate best between groups
+- figure: feature distribution differences for phenotypes (nur die top anova!)
+- correlation heatmap, summary tables -> könnte zu lang werden, aufs
+wichtigste beschränken!
+- key findings zusammenfassen
+- nur zeugs was raussticht erwähnen, tabellen etc. in appendix und referenzieren
+
+\subsection{Pheontype Classification}\label{sec:results:phenoclass}
+
+- Multi-class cross-validated classifier comparison: RF, SVM,
+Logistic Regression, ensembling
+- Table: per-classifier accuracy (5-fold CV). Best model achieves X% accuracy.
+- (ROC curves, confusion matrices, feature importance)
+- Best-performing model and key predictive features
 
 \section{Discussion}\label{sec:discussion}
 
-The discussion typically starts with a summary of your work's most
-important results. Then, you discuss limitations of your work and
-potential follow-up. Finally, you end on a positive note and tell the
-reader at a very high abstraction level how your work advanced the
-field: What did we learn through your work? What do we know now that
-was not known before? Which type of analyses can now be run now that
-were not possible before?
+% The discussion typically starts with a summary of your work's most
+% important results. Then, you discuss limitations of your work and
+% potential follow-up. Finally, you end on a positive note and tell the
+% reader at a very high abstraction level how your work advanced the
+% field: What did we learn through your work? What do we know now that
+% was not known before? Which type of analyses can now be run now that
+% were not possible before?
+%
+% Typically, discussions are internally unstructured. But you may
+% deviate from this rule of thumb, e.\,g., by including separate
+% subsections on limitations and outlook.
 
-Typically, discussions are internally unstructured. But you may
-deviate from this rule of thumb, e.\,g., by including separate
-subsections on limitations and outlook.
+- Summary of main findings: VesSkel enables fully reproducible,
+quantitative vessel phenotype analysis
+- Feature set captures biologically relevant differences between clinical groups
+- Limitations: small dataset (45 images), 2D-only validation on
+fundus, no longitudinal data
+- Potential follow-ups: wavefront -> 3d performance
 
 \section{Methods}\label{sec:methods}
 
-\subsection{Structure of the Methods section}
+% \subsection{Structure of the Methods section}
+%
+% Good Methods sections are designed in such a way that the subsection
+% headings allow the reader to quickly navigate it without reading the
+% entire section from top to bottom. You may think of it as a
+% dictionary where readers look up details of the work that are of
+% particular interest to them. Each individual subsection should be
+% detailed enough to allow replication of your work, so be precise in
+% your descriptions. Overall, the subsections of your Methods section
+% should cover all methodological details that are relevant for your
+% work: details on your ML model or algorithm, descriptions of datasets
+% and data preprocessing, details on evaluation protocols and metrics,
+% description of competitor approaches, etc.
+%
+% \subsection{Equations}
+%
+% When using mathematical formalism, make sure that you always define
+% all symbols, including indices. For instance, if for some reason you
+% want to introduce the quantity $s$ as the sum of all Fibonacci
+% numbers $F_i$ with odd indices smaller or equal to $100$, you should
+% not simply write
+% \begin{equation}
+%   s=\sum_{i}F_i \label{eq:bad}
+% \end{equation}
+% and hope that the range of the index $i$ is clear from the context.
+% Instead, introduce an index set
+% $\mathcal{O}_{100}=\{i\in\mathbb{N}\mid i\leq100\land\text{$i$ is
+% odd}\}$ and define $s$ as in the following \Cref{eq:good}:
+% \begin{equation}
+%   s=\sum_{i\in\mathcal{O}_{100}}F_i \label{eq:good}
+% \end{equation}
+%
+% Moreover, it is preferable to always use numbered instead of
+% unnumbered equation environments (i.\,e.,
+%   \verb|\begin{equation}...\end{equation}| and
+%   \verb|\begin{align}...\end{align}| instead of
+%   \verb|\begin{equation*}...\end{equation*}| and
+% \verb|\begin{align*}...\end{align*}|). Like this, you can reference
+% the equations in the text and it is easier for readers to refer to them.
+%
+% \subsection{Theorems, definitions, proofs, and similar environments}
+%
+% This template provides \verb|definition|, \verb|observation|,
+% \verb|remark|, \verb|proposition|, \verb|lemma|, \verb|theorem|, and
+% \verb|proof| environments you can use as needed. Examples are
+% provided in \Cref{def:dummy-def} and \Cref{thm:dummy-theorem}.
+%
+% \begin{definition}[Optional name of defined concept]\label{def:dummy-def}
+%   Statement of the definition.
+% \end{definition}
+%
+% \begin{theorem}[Optional name of theorem]\label{thm:dummy-theorem}
+%   Statement of the theorem.
+% \end{theorem}
+%
+% \begin{proof}
+%   Proof here.
+% \end{proof}
 
-Good Methods sections are designed in such a way that the subsection
-headings allow the reader to quickly navigate it without reading the
-entire section from top to bottom. You may think of it as a
-dictionary where readers look up details of the work that are of
-particular interest to them. Each individual subsection should be
-detailed enough to allow replication of your work, so be precise in
-your descriptions. Overall, the subsections of your Methods section
-should cover all methodological details that are relevant for your
-work: details on your ML model or algorithm, descriptions of datasets
-and data preprocessing, details on evaluation protocols and metrics,
-description of competitor approaches, etc.
+\subsection{Lee94 Thinning Algorithm}\label{sec:methods:lee}
 
-\subsection{Equations}
+- nur kurz wichtigste punkte an denen ich ansetze erklären und lee
+paper referenzieren
 
-When using mathematical formalism, make sure that you always define
-all symbols, including indices. For instance, if for some reason you
-want to introduce the quantity $s$ as the sum of all Fibonacci
-numbers $F_i$ with odd indices smaller or equal to $100$, you should
-not simply write
-\begin{equation}
-  s=\sum_{i}F_i \label{eq:bad}
-\end{equation}
-and hope that the range of the index $i$ is clear from the context.
-Instead, introduce an index set
-$\mathcal{O}_{100}=\{i\in\mathbb{N}\mid i\leq100\land\text{$i$ is
-odd}\}$ and define $s$ as in the following \Cref{eq:good}:
-\begin{equation}
-  s=\sum_{i\in\mathcal{O}_{100}}F_i \label{eq:good}
-\end{equation}
+- Topology-preserving: 6-directional sub-iteration, border-pixel
+removal preserving
+- (1) endpoints
+- (2) Euler characteristic
+- (3) simple-point condition
 
-Moreover, it is preferable to always use numbered instead of
-unnumbered equation environments (i.\,e.,
-  \verb|\begin{equation}...\end{equation}| and
-  \verb|\begin{align}...\end{align}| instead of
-  \verb|\begin{equation*}...\end{equation*}| and
-\verb|\begin{align*}...\end{align*}|). Like this, you can reference
-the equations in the text and it is easier for readers to refer to them.
+\subsection{Implementation Details}\label{sec:methods:impl}
 
-\subsection{Theorems, definitions, proofs, and similar environments}
+\paragraph{Deviations of this Implementation}\label{sec:methods:impl:deviations}
 
-This template provides \verb|definition|, \verb|observation|,
-\verb|remark|, \verb|proposition|, \verb|lemma|, \verb|theorem|, and
-\verb|proof| environments you can use as needed. Examples are
-provided in \Cref{def:dummy-def} and \Cref{thm:dummy-theorem}.
+- in 2d euler fällt in 2D weg (proof übernehmen?)
+- usw.
 
-\begin{definition}[Optional name of defined concept]\label{def:dummy-def}
-  Statement of the definition.
-\end{definition}
+\paragraph{Numba-Parallelized Implementation}\label{sec:methods:impl:numba}
 
-\begin{theorem}[Optional name of theorem]\label{thm:dummy-theorem}
-  Statement of the theorem.
-\end{theorem}
+- actual implementation details
+- simple point ist 26-adjacency connectivity in 3D; 8-adjacency in 2D via LUT
 
-\begin{proof}
-  Proof here.
-\end{proof}
+\paragraph{Tests}\label{sec:methods:impl:tests}
+
+- Correctness verified against scikit-image Lee94 output -> tests erwähnen
+
+\subsection{Cleanup Steps}\label{sec:methods:cleanup}
+
+- closing und hole filling der maske erwähnen
+- Triangle/diamond artifacts from skeletonization detected via
+cycle-basis on skan graph: cycles with perimeter < 2.5x local vessel
+diameter are collapsed to a centroid pixel.
+
+\subsection{Graph Construction and Features}\label{sec:methods:graph}
+
+- Build vessel graph via skan (Skeleton object -> CSR graph).
+- Features computed: node degree, edge length (branch-distance),
+tortuosity (branch/euclidean ratio), vessel radii (distance
+transform), fractal dimension (box-counting, log-log slope), HGU
+(total length / endpoint count).
+- selbst implementiertes zeugs genauer erläutern
+
+\subsection{Dataset and Preprocessing}\label{sec:methods:data}
+
+- HRF dataset: 45 fundus images (15 healthy, 15 DR, 15 glaucoma) with
+manual vessel segmentation masks
+- 3D: brain und vessap volume erwähnen
+- KEINE medizinischen details -> nur kurzer satz zu krankheiten und
+dass die blutgefäße sich verändern
+- evtl. nach 5. schieben
+
+\subsection{Experimental Setup}\label{sec:methods:setup}
+
+\paragraph{Runtime Tests}\label{sec:methods:setup:runtime}
+
+- Hardware, feature configuration (junction cleanup on, radius on,
+fractal dimension on, hole filling with max\_hole\_size=200).
+
+\paragraph{Phenotype Differentiation}\label{sec:methods:setup:phenodiff}
+
+- anova
+
+\paragraph{Phenotype Prediction}\label{sec:methods:setup:phenoclass}
+
+- classifiers: Random Forest/SVM/LogReg/Stacking classifiers with
+5-fold stratified cross-validation -> erwähnen, dass aus sklearn genommen
 
 \section{Code availability}\label{sec:code}
 
-If you wrote any source code as part of your work, provide a link to
-a well-documented GitHub repository here. Moreover, release a stable
-version of your source code and provide its DOI here. You can use
-Zenodo for this, see \url{https://help.zenodo.org/docs/github/}.
-Write ``Not applicable'' if and only if you did not write any source
-code as part of your work.
+% If you wrote any source code as part of your work, provide a link to
+% a well-documented GitHub repository here. Moreover, release a stable
+% version of your source code and provide its DOI here. You can use
+% Zenodo for this, see \url{https://help.zenodo.org/docs/github/}.
+% Write ``Not applicable'' if and only if you did not write any source
+% code as part of your work.
+
+- GitHub repository und PyPi link, Zenodo DOI.
+- Installation via `uv` oder `pip`, napari plugin, CLI batch processing.
 
 \section{Data availability}\label{sec:data}
 
-Describe from where you obtained the public data underlying your
-work. Your descriptions should be detailed enough to allow others to
-access the exact same data and to reproduce your results, using the
-code you linked in \Cref{sec:code}. If you generated data yourself
-(e.g., through simulation), either deposit the data in a public
-repository such as Zenodo and provide the DOI here or explain how
-others can rerun the simulation to generate the data themselves. If
-you used private or sensitive data that is not public and cannot be
-made publicly available, explain why this is the case. Write ``Not
-applicable'' if and only if you did not use any data for your work.
+% Describe from where you obtained the public data underlying your
+% work. Your descriptions should be detailed enough to allow others to
+% access the exact same data and to reproduce your results, using the
+% code you linked in \Cref{sec:code}. If you generated data yourself
+% (e.g., through simulation), either deposit the data in a public
+% repository such as Zenodo and provide the DOI here or explain how
+% others can rerun the simulation to generate the data themselves. If
+% you used private or sensitive data that is not public and cannot be
+% made publicly available, explain why this is the case. Write ``Not
+% applicable'' if and only if you did not use any data for your work.
+
+- HRF dataset reference (Budai et al., 2013), CC-BY 4.0.
 
 \printbibliography
 
@@ -267,45 +412,47 @@ applicable'' if and only if you did not use any data for your work.
 
 \section{Supplementary figures}\label{appendix:figures}
 
-Supplementary figures that provide additional results but do not fit
-into the narrative of the main text can be put here. All
-supplementary figures should be referenced from the main text and
-should be listed here in the order of these references. Delete this
-section if not needed.
-
-\begin{figure}[htb]
-  \centering
-  \includegraphics[width=0.5\linewidth]{example-image-b}
-  \caption{Caption of \Cref{fig:supp-fig}.}
-  \label{fig:supp-fig}
-\end{figure}
+% Supplementary figures that provide additional results but do not fit
+% into the narrative of the main text can be put here. All
+% supplementary figures should be referenced from the main text and
+% should be listed here in the order of these references. Delete this
+% section if not needed.
+%
+% \begin{figure}[htb]
+%   \centering
+%   \includegraphics[width=0.5\linewidth]{example-image-b}
+%   \caption{Caption of \Cref{fig:supp-fig}.}
+%   \label{fig:supp-fig}
+% \end{figure}
 
 \section{Supplementary tables}\label{appendic:tables}
 
-Supplementary tables that provide additional results but do not fit
-into the narrative of the main text can be put here. All
-supplementary tables should be referenced from the main text and
-should be listed here in the order of these references. Delete this
-section if not needed.
-
-\begin{table}[htb]
-  \centering
-  \caption{Example of a table generated with the \texttt{tabular}
-    environment that has a slightly simpler syntax than the
-    \texttt{tabularx} environment but does not support flexible-width
-  columns.}\label{tab:supptab}
-  \begin{tabular}{lll}
-    \toprule
-    Column 1 & Column 2 & Column 3\\
-    \midrule
-    X & Y & Z \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+% Supplementary tables that provide additional results but do not fit
+% into the narrative of the main text can be put here. All
+% supplementary tables should be referenced from the main text and
+% should be listed here in the order of these references. Delete this
+% section if not needed.
+%
+% \begin{table}[htb]
+%   \centering
+%   \caption{Example of a table generated with the \texttt{tabular}
+%     environment that has a slightly simpler syntax than the
+%     \texttt{tabularx} environment but does not support flexible-width
+%   columns.}\label{tab:supptab}
+%   \begin{tabular}{lll}
+%     \toprule
+%     Column 1 & Column 2 & Column 3\\
+%     \midrule
+%     X & Y & Z \\
+%     \bottomrule
+%   \end{tabular}
+% \end{table}
 
 \clearpage
 
 \section{AI usage declaration}\label{sec:ai-declaration}
+
+Gemini, Chatgpt, Copilot, Deepseek, Opencode
 
 In the boxes below, please specify which AI tool you used, to what
 extent, and for which task. If you did not use AI tools for the task,
