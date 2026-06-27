@@ -24,7 +24,7 @@ from vesskel.napari_layers import extract_skeleton_layers
 from vesskel.thin import lee94_thin
 
 if TYPE_CHECKING:
-    from napari.types import LayerDataTuple
+    from napari.types import LayerDataTuple  # noqa: F401
 
 
 @dataclass
@@ -32,7 +32,7 @@ class AnalysisResult:
     """Container for single-image analysis outputs."""
 
     skeleton: np.ndarray
-    layers: list["napari.types.LayerDataTuple"]
+    layers: list["napari.types.LayerDataTuple"]  # noqa: F821
     summary_features: dict[str, float]
     branch_records: list[dict[str, object]]
     node_records: list[dict[str, object]]
@@ -121,8 +121,12 @@ def analyze_binary_image(
             branch_data[key] = arr
 
         if radius_stats is not None:
-            radius_stats["mean_segment_volume"] = float(np.nanmean(branch_data["volume"]))
-            radius_stats["mean_surface_area"] = float(np.nanmean(branch_data["surface_area"]))
+            radius_stats["mean_segment_volume"] = float(
+                np.nanmean(branch_data["volume"])
+            )
+            radius_stats["mean_surface_area"] = float(
+                np.nanmean(branch_data["surface_area"])
+            )
 
     if not branch_data.empty:
         euclidean = branch_data["euclidean-distance"].to_numpy(dtype=float)

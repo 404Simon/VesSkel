@@ -15,7 +15,7 @@ from qtpy.QtWidgets import QFileDialog
 if TYPE_CHECKING:
     # These imports are only used for annotations and are therefore
     # guarded by TYPE_CHECKING to avoid runtime import-time coupling.
-    from napari.layers import Image
+    from napari.layers import Image  # noqa: F401
 
 from vesskel.config import (
     ExtractionConfig,
@@ -40,7 +40,7 @@ class VesselAnalysisWidget(Container):
     def _setup_ui(self):
         # ---------- extraction parameters (magicgui) ----------
         def _extraction_params(
-            image: "napari.layers.Image",
+            image: "napari.layers.Image",  # noqa: F821
             extract_branches: bool = False,
             extract_branch_text: bool = False,
             extract_nodes: bool = False,
@@ -347,9 +347,7 @@ class VesselAnalysisWidget(Container):
 
             n_fg = int((img.data > 0).sum())
             n_skel = int(result.skeleton.sum())
-            show_info(
-                f"Analysis: {n_fg} → {n_skel} skeleton pixels " f"in {elapsed:.3f}s"
-            )
+            show_info(f"Analysis: {n_fg} → {n_skel} skeleton pixels in {elapsed:.3f}s")
 
             # Always add skeleton layer first.
             self.viewer.add_layer(
@@ -379,7 +377,7 @@ class VesselAnalysisWidget(Container):
                     self.viewer.add_layer(layer)
                 except Exception as e:
                     show_info(
-                        f"Failed to add layer " f"{meta.get('name', '<unnamed>')}: {e}"
+                        f"Failed to add layer {meta.get('name', '<unnamed>')}: {e}"
                     )
         except (ValueError, RuntimeError, OSError) as e:
             show_error(f"Analysis failed: {e}")

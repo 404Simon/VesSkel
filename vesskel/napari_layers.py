@@ -9,7 +9,7 @@ from vesskel.config import ExtractionConfig
 from vesskel.features import compute_tortuosity, extract_node_features
 
 if TYPE_CHECKING:
-    from napari.types import LayerDataTuple
+    from napari.types import LayerDataTuple  # noqa: F401
 
 
 def extract_skeleton_layers(
@@ -20,7 +20,7 @@ def extract_skeleton_layers(
     config: ExtractionConfig | None = None,
     features: dict[str, float] | None = None,
     radius_matrix: np.ndarray | None = None,
-) -> list["napari.types.LayerDataTuple"]:
+) -> list["napari.types.LayerDataTuple"]:  # noqa: F821
     """Extract visualization layers from a binary skeleton.
 
     Parameters
@@ -56,15 +56,15 @@ def extract_skeleton_layers(
                 layers.append(text_layer)
 
     if config.nodes:
-        node_layer = _extract_node_features_layer(base_name, graph, branch_data, radius_matrix=radius_matrix)
+        node_layer = _extract_node_features_layer(
+            base_name, graph, branch_data, radius_matrix=radius_matrix
+        )
         if node_layer is not None:
             layers.append(node_layer)
 
     if config.summary:
         if features is None:
-            raise ValueError(
-                "features is required when summary is enabled"
-            )
+            raise ValueError("features is required when summary is enabled")
         summary_layer = _extract_summary_features_layer(
             skeleton,
             base_name,
@@ -84,7 +84,7 @@ def _extract_radius_layer(
     radius_matrix: np.ndarray,
     skeleton: np.ndarray,
     base_name: str,
-) -> "napari.types.LayerDataTuple | None":
+) -> "napari.types.LayerDataTuple | None":  # noqa: F821
     """Create an image layer showing per-pixel vessel radius on the skeleton."""
     if not np.any(radius_matrix):
         return None
@@ -103,7 +103,7 @@ def _extract_branch_features_layer(
     base_name: str,
     graph: Skeleton,
     branch_data,
-) -> "napari.types.LayerDataTuple | None":
+) -> "napari.types.LayerDataTuple | None":  # noqa: F821
     """Extract branch features and generate paths layer.
 
     Parameters
@@ -161,9 +161,9 @@ def _extract_branch_features_layer(
 
 
 def _extract_branch_text_layer(
-    branch_layer: "napari.types.LayerDataTuple",
+    branch_layer: "napari.types.LayerDataTuple",  # noqa: F821
     base_name: str,
-) -> "napari.types.LayerDataTuple":
+) -> "napari.types.LayerDataTuple":  # noqa: F821
     path_data = branch_layer[0]
     branch_data = branch_layer[1]["properties"]
 
@@ -197,7 +197,7 @@ def _extract_summary_features_layer(
     skeleton: np.ndarray,
     base_name: str,
     features: dict[str, float],
-) -> "napari.types.LayerDataTuple":
+) -> "napari.types.LayerDataTuple":  # noqa: F821
     """Create a summary point layer displaying global skeleton features.
 
     Parameters
@@ -242,17 +242,24 @@ def _extract_node_features_layer(
     graph: Skeleton,
     branch_data,
     radius_matrix: np.ndarray | None = None,
-) -> "napari.types.LayerDataTuple | None":
+) -> "napari.types.LayerDataTuple | None":  # noqa: F821
     """Create a points layer showing graph nodes colored by degree."""
-    node_records = extract_node_features(graph, branch_data, radius_matrix=radius_matrix)
+    node_records = extract_node_features(
+        graph, branch_data, radius_matrix=radius_matrix
+    )
     if not node_records:
         return None
 
     ndim = graph.coordinates.shape[1]
-    points = np.array([tuple(r[f"coord_{d}"] for d in range(ndim)) for r in node_records], dtype=float)
+    points = np.array(
+        [tuple(r[f"coord_{d}"] for d in range(ndim)) for r in node_records], dtype=float
+    )
 
-    props = {k: [r[k] for r in node_records] for k in node_records[0].keys()
-             if not k.startswith("coord_")}
+    props = {
+        k: [r[k] for r in node_records]
+        for k in node_records[0].keys()
+        if not k.startswith("coord_")
+    }
 
     meta = {
         "name": f"{base_name}_nodes",
