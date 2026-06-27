@@ -26,6 +26,7 @@ class ExtractionConfig:
 
     branches: bool = False
     branch_text: bool = False
+    nodes: bool = False
     summary: bool = False
     fractal_dimension: bool = False
     vessel_radius: bool = False
@@ -40,6 +41,7 @@ class ExtractionConfig:
         return {
             "branches": self.branches,
             "branch_text": self.branch_text,
+            "nodes": self.nodes,
             "summary": self.summary,
             "fractal_dimension": self.fractal_dimension,
             "vessel_radius": self.vessel_radius,
@@ -57,6 +59,7 @@ class ExtractionConfig:
         return cls(
             branches=data.get("branches", False),
             branch_text=data.get("branch_text", False),
+            nodes=data.get("nodes", False),
             summary=data.get("summary", False),
             fractal_dimension=data.get("fractal_dimension", False),
             vessel_radius=data.get("vessel_radius", False),
@@ -77,6 +80,7 @@ class OutputConfig:
     write_skeleton_png: bool = False
     write_summary_csv: bool = True
     write_branch_csv: bool = False
+    write_node_csv: bool = False
     write_radius: bool = False
 
     def to_dict(self) -> dict[str, Any]:
@@ -85,6 +89,7 @@ class OutputConfig:
             "write_skeleton_png": self.write_skeleton_png,
             "write_summary_csv": self.write_summary_csv,
             "write_branch_csv": self.write_branch_csv,
+            "write_node_csv": self.write_node_csv,
             "write_radius": self.write_radius,
         }
 
@@ -97,6 +102,7 @@ class OutputConfig:
             write_skeleton_png=bool(data.get("write_skeleton_png", False)),
             write_summary_csv=bool(data.get("write_summary_csv", True)),
             write_branch_csv=bool(data.get("write_branch_csv", False)),
+            write_node_csv=bool(data.get("write_node_csv", False)),
             write_radius=bool(data.get("write_radius", False)),
         )
 

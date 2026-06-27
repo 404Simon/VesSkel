@@ -98,4 +98,7 @@ def process_one(
     if config.output.write_branch_csv and result.branch_records:
         _write_csv(image_out_dir / f"{safe_name}_branches.csv", result.branch_records)
 
+    if config.output.write_node_csv and result.node_records:
+        _write_csv(image_out_dir / f"{safe_name}_nodes.csv", result.node_records)
+
     return {"image": in_path.name, **result.summary_features}

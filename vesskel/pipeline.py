@@ -15,6 +15,7 @@ from vesskel.features import (
     build_vessel_graph,
     compute_radii,
     compute_tortuosity,
+    extract_node_features,
     extract_vessel_features,
     per_segment_radii,
 )
@@ -34,6 +35,7 @@ class AnalysisResult:
     layers: list["napari.types.LayerDataTuple"]
     summary_features: dict[str, float]
     branch_records: list[dict[str, object]]
+    node_records: list[dict[str, object]]
     radius_matrix: np.ndarray | None = None
     preprocessed_binary: np.ndarray | None = None
 
@@ -90,6 +92,7 @@ def analyze_binary_image(
             layers=[],
             summary_features={},
             branch_records=[],
+            node_records=[],
         )
 
     # -- optional: collapse triangle junction artifacts -----------------
@@ -156,11 +159,20 @@ def analyze_binary_image(
     if config.extraction.branches and not branch_data.empty:
         branch_records = branch_data.to_dict(orient="records")
 
+    node_records: list[dict[str, object]] = []
+    if config.extraction.nodes:
+        node_records = extract_node_features(
+            graph,
+            branch_data,
+            radius_matrix=radius_matrix,
+        )
+
     return AnalysisResult(
         skeleton=skeleton,
         layers=layers,
         summary_features=summary_features,
         branch_records=branch_records,
+        node_records=node_records,
         radius_matrix=radius_matrix,
         preprocessed_binary=preprocessed_binary,
     )

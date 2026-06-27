@@ -12,6 +12,7 @@ class TestAnalysisResult:
             layers=[],
             summary_features={},
             branch_records=[],
+            node_records=[],
         )
         assert result.radius_matrix is None
 
@@ -23,6 +24,7 @@ class TestAnalysisResult:
             layers=[(skeleton, {"name": "test"}, "image")],
             summary_features={"num_nodes": 3.0},
             branch_records=[{"branch_id": 0}],
+            node_records=[],
             radius_matrix=radius,
         )
         assert np.array_equal(result.skeleton, skeleton)
@@ -36,6 +38,7 @@ class TestAnalysisResult:
             layers=[(np.ones((3, 3)), {"layer_type": "image"}, "image")],
             summary_features={},
             branch_records=[],
+            node_records=[],
         )
         assert len(result.layers) == 1
         data, meta, lt = result.layers[0]

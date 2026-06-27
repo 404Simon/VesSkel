@@ -43,6 +43,7 @@ class VesselAnalysisWidget(Container):
             image: "napari.layers.Image",
             extract_branches: bool = False,
             extract_branch_text: bool = False,
+            extract_nodes: bool = False,
             extract_summary: bool = False,
             include_fractal: bool = False,
             include_vessel_radius: bool = False,
@@ -97,6 +98,7 @@ class VesselAnalysisWidget(Container):
             write_skeleton_png: bool = False,
             write_summary_csv: bool = True,
             write_branch_csv: bool = False,
+            write_node_csv: bool = False,
             write_radius: bool = False,
         ) -> None:
             return None
@@ -122,9 +124,13 @@ class VesselAnalysisWidget(Container):
         self.extract_summary_widget = extraction_gui.extract_summary
         self.extract_summary_widget.label = "Extract summary statistics"
 
+        self.extract_nodes_widget = extraction_gui.extract_nodes
+        self.extract_nodes_widget.label = "Extract node features"
+
         extraction_group.append(self.extract_branches_widget)
         extraction_group.append(self.extract_branch_text_widget)
         extraction_group.append(self.extract_summary_widget)
+        extraction_group.append(self.extract_nodes_widget)
 
         # ============================================================
         # Advanced Features
@@ -186,6 +192,9 @@ class VesselAnalysisWidget(Container):
         self.write_branch_csv_widget = output_gui.write_branch_csv
         self.write_branch_csv_widget.label = "Write branch CSV"
 
+        self.write_node_csv_widget = output_gui.write_node_csv
+        self.write_node_csv_widget.label = "Write node CSV"
+
         self.write_radius_widget = output_gui.write_radius
         self.write_radius_widget.label = "Write radius matrix (.npy)"
 
@@ -193,6 +202,7 @@ class VesselAnalysisWidget(Container):
         output_group.append(self.write_skeleton_png_widget)
         output_group.append(self.write_summary_csv_widget)
         output_group.append(self.write_branch_csv_widget)
+        output_group.append(self.write_node_csv_widget)
         output_group.append(self.write_radius_widget)
 
         # ============================================================
@@ -236,6 +246,7 @@ class VesselAnalysisWidget(Container):
             extraction=ExtractionConfig(
                 branches=self.extract_branches_widget.value,
                 branch_text=self.extract_branch_text_widget.value,
+                nodes=self.extract_nodes_widget.value,
                 summary=self.extract_summary_widget.value,
                 fractal_dimension=self.include_fractal_widget.value,
                 vessel_radius=self.include_vessel_radius_widget.value,
@@ -251,6 +262,7 @@ class VesselAnalysisWidget(Container):
                 write_skeleton_png=self.write_skeleton_png_widget.value,
                 write_summary_csv=self.write_summary_csv_widget.value,
                 write_branch_csv=self.write_branch_csv_widget.value,
+                write_node_csv=self.write_node_csv_widget.value,
                 write_radius=self.write_radius_widget.value,
             ),
         )
@@ -259,6 +271,7 @@ class VesselAnalysisWidget(Container):
         e = config.extraction
         self.extract_branches_widget.value = e.branches
         self.extract_branch_text_widget.value = e.branch_text
+        self.extract_nodes_widget.value = e.nodes
         self.extract_summary_widget.value = e.summary
         self.include_fractal_widget.value = e.fractal_dimension
         self.include_vessel_radius_widget.value = e.vessel_radius
@@ -274,6 +287,7 @@ class VesselAnalysisWidget(Container):
         self.write_skeleton_png_widget.value = o.write_skeleton_png
         self.write_summary_csv_widget.value = o.write_summary_csv
         self.write_branch_csv_widget.value = o.write_branch_csv
+        self.write_node_csv_widget.value = o.write_node_csv
         self.write_radius_widget.value = o.write_radius
 
     # ------------------------------------------------------------------

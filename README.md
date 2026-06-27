@@ -36,6 +36,7 @@ CLI outputs:
 - `outputs/summary.csv` with one feature row per image
 - Optional per-image skeleton outputs (default: `.npy`)
 - Optional per-image branch tables when `output.write_branch_csv=true`
+- Optional per-image node tables when `output.write_node_csv=true`
 
 ## Configuration
 
@@ -47,6 +48,7 @@ Extraction and output settings are defined in a JSON config file (e.g. the one e
   "extraction": {
     "branches": false,
     "branch_text": false,
+    "nodes": false,
     "summary": true,
     "fractal_dimension": false,
     "vessel_radius": false,
@@ -62,6 +64,7 @@ Extraction and output settings are defined in a JSON config file (e.g. the one e
     "write_skeleton_png": false,
     "write_summary_csv": true,
     "write_branch_csv": false,
+    "write_node_csv": false,
     "write_radius": false
   }
 }
@@ -71,6 +74,7 @@ Extraction and output settings are defined in a JSON config file (e.g. the one e
 |---|---|---|---|
 | `extraction.branches` | bool | `false` | Extract per-branch features for CSV export or napari visualization |
 | `extraction.branch_text` | bool | `false` | Display branch ID, length, and tortuosity labels on the napari branch layer |
+| `extraction.nodes` | bool | `false` | Extract per-node features for CSV export or napari visualization |
 | `extraction.summary` | bool | `false` | Compute summary features  |
 | `extraction.fractal_dimension` | bool | `false` | Compute fractal dimension of the skeleton |
 | `extraction.vessel_radius` | bool | `false` | Estimate vessel radius using EDT from the segmentation |
@@ -84,6 +88,7 @@ Extraction and output settings are defined in a JSON config file (e.g. the one e
 | `output.write_skeleton_png` | bool | `false` | Save binary skeleton mask as `.png` per image |
 | `output.write_summary_csv` | bool | `true` | Write aggregated per-image features to `summary.csv` |
 | `output.write_branch_csv` | bool | `false` | Write per-branch CSV tables (requires `extraction.branches`) |
+| `output.write_node_csv` | bool | `false` | Write per-node CSV tables (requires `extraction.nodes`) |
 | `output.write_radius` | bool | `false` | Write per-pixel radius matrix as `.npy` (requires `extraction.vessel_radius`) |
 
 ### Shell completions

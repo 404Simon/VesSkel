@@ -6,7 +6,7 @@ import numpy as np
 from skan import Skeleton
 
 from vesskel.config import ExtractionConfig
-from vesskel.features import compute_tortuosity
+from vesskel.features import compute_tortuosity, extract_node_features
 
 if TYPE_CHECKING:
     from napari.types import LayerDataTuple
@@ -54,6 +54,11 @@ def extract_skeleton_layers(
             if config.branch_text:
                 text_layer = _extract_branch_text_layer(branch_layer, base_name)
                 layers.append(text_layer)
+
+    if config.nodes:
+        node_layer = _extract_node_features_layer(base_name, graph, branch_data, radius_matrix=radius_matrix)
+        if node_layer is not None:
+            layers.append(node_layer)
 
     if config.summary:
         if features is None:
@@ -228,5 +233,34 @@ def _extract_summary_features_layer(
             "color": "yellow",
             "anchor": "upper_left",
         },
+    }
+    return (points, meta, "points")
+
+
+def _extract_node_features_layer(
+    base_name: str,
+    graph: Skeleton,
+    branch_data,
+    radius_matrix: np.ndarray | None = None,
+) -> "napari.types.LayerDataTuple | None":
+    """Create a points layer showing graph nodes colored by degree."""
+    node_records = extract_node_features(graph, branch_data, radius_matrix=radius_matrix)
+    if not node_records:
+        return None
+
+    ndim = graph.coordinates.shape[1]
+    points = np.array([tuple(r[f"coord_{d}"] for d in range(ndim)) for r in node_records], dtype=float)
+
+    props = {k: [r[k] for r in node_records] for k in node_records[0].keys()
+             if not k.startswith("coord_")}
+
+    meta = {
+        "name": f"{base_name}_nodes",
+        "properties": props,
+        "symbol": "disc",
+        "size": 3,
+        "face_color": "degree",
+        "face_colormap": "viridis",
+        "opacity": 0.8,
     }
     return (points, meta, "points")

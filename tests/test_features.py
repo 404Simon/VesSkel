@@ -7,6 +7,7 @@ from vesskel.features import (
     build_vessel_graph,
     compute_radii,
     compute_tortuosity,
+    extract_node_features,
     extract_vessel_features,
     fractal_dimension,
 )
@@ -266,3 +267,84 @@ class TestExtractVesselFeatures:
             features["vessel_area_fraction"]
             == np.count_nonzero(simple_cross) / simple_cross.size
         )
+
+
+class TestExtractNodeFeatures:
+    @pytest.fixture
+    def simple_cross(self):
+        img = np.zeros((32, 32), dtype=np.uint8)
+        img[16, 8:24] = 1
+        img[8:24, 16] = 1
+        return img
+
+    @pytest.fixture
+    def simple_cross_graph(self, simple_cross):
+        return build_vessel_graph(simple_cross)
+
+    @pytest.fixture
+    def simple_cross_branch_data(self, simple_cross_graph):
+        return summarize(simple_cross_graph, separator="-")
+
+    def test_returns_one_record_per_graph_node(
+        self, simple_cross_graph, simple_cross_branch_data
+    ):
+        nodes = extract_node_features(simple_cross_graph, simple_cross_branch_data)
+        assert len(nodes) == simple_cross_graph.coordinates.shape[0]
+
+    def test_has_expected_keys(self, simple_cross_graph, simple_cross_branch_data):
+        nodes = extract_node_features(simple_cross_graph, simple_cross_branch_data)
+        assert set(nodes[0].keys()) == {
+            "node_id",
+            "degree",
+            "coord_0",
+            "coord_1",
+            "is_endpoint",
+            "is_junction",
+            "is_pass_through",
+        }
+
+    def test_cross_topology_counts(self, simple_cross_graph, simple_cross_branch_data):
+        nodes = extract_node_features(simple_cross_graph, simple_cross_branch_data)
+        endpoints = sum(1 for n in nodes if n["is_endpoint"])
+        junctions = sum(1 for n in nodes if n["is_junction"])
+        assert endpoints == 4
+        assert junctions == 1
+
+    def test_radius_included_when_provided(
+        self, simple_cross, simple_cross_graph, simple_cross_branch_data
+    ):
+        radius_matrix, _ = compute_radii(
+            simple_cross, (simple_cross > 0).astype(np.uint8)
+        )
+        nodes = extract_node_features(
+            simple_cross_graph, simple_cross_branch_data, radius_matrix=radius_matrix
+        )
+        assert "radius" in nodes[0]
+        assert all(
+            n["radius"] > 0 for n in nodes if n["is_endpoint"] or n["is_junction"]
+        )
+
+    def test_no_radius_when_not_provided(
+        self, simple_cross_graph, simple_cross_branch_data
+    ):
+        nodes = extract_node_features(simple_cross_graph, simple_cross_branch_data)
+        assert "radius" not in nodes[0]
+
+    def test_nodes_have_pixel_coordinates(
+        self, simple_cross_graph, simple_cross_branch_data
+    ):
+        nodes = extract_node_features(simple_cross_graph, simple_cross_branch_data)
+        coords = np.array([(n["coord_0"], n["coord_1"]) for n in nodes])
+        assert coords.shape == (len(nodes), 2)
+        assert coords.dtype == np.int64
+
+    def test_works_with_single_straight_line(self):
+        img = np.zeros((8, 32), dtype=np.uint8)
+        img[4, 4:28] = 1
+        graph = build_vessel_graph(img)
+        branch_data = summarize(graph, separator="-")
+        nodes = extract_node_features(graph, branch_data)
+        assert len(nodes) > 0
+        assert nodes[0]["is_endpoint"]
+        assert nodes[-1]["is_endpoint"]
+        assert all(n["is_pass_through"] or n["is_endpoint"] for n in nodes)
