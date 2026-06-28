@@ -37,9 +37,7 @@ class TestExtractSkeletonLayers:
     def features(self, skeleton, graph, branch_data):
         return _features_for(skeleton, graph, branch_data)
 
-    def test_with_config_returns_layers(
-        self, skeleton, graph, branch_data, features
-    ):
+    def test_with_config_returns_layers(self, skeleton, graph, branch_data, features):
         layers = extract_skeleton_layers(
             skeleton,
             "test",
@@ -148,7 +146,9 @@ class TestExtractSkeletonLayers:
             config=config,
             features=features,
         )
-        summary_layer = [l for l in layers if l[1].get("name", "").endswith("_summary")]
+        summary_layer = [
+            layer for layer in layers if layer[1].get("name", "").endswith("_summary")
+        ]
         assert len(summary_layer) == 1
         assert "properties" in summary_layer[0][1]
 
@@ -205,7 +205,7 @@ class TestExtractSkeletonLayers:
             config=ExtractionConfig(branches=True, summary=True),
             features=features,
         )
-        branch_layer = [l for l in layers if l[2] == "shapes"][0]
+        branch_layer = [layer for layer in layers if layer[2] == "shapes"][0]
         props = branch_layer[1]["properties"]
         assert len(props) > 0
 
@@ -219,7 +219,7 @@ class TestExtractSkeletonLayers:
             config=ExtractionConfig(branches=True, branch_text=False),
             features=features,
         )
-        layer_types = [l[2] for l in layers]
+        layer_types = [layer[2] for layer in layers]
         assert "shapes" not in layer_types
 
     def test_empty_skeleton(self):
@@ -236,7 +236,7 @@ class TestExtractSkeletonLayers:
             config=ExtractionConfig(summary=True),
             features=features,
         )
-        summary = [l for l in layers if "_summary" in l[1].get("name", "")]
+        summary = [layer for layer in layers if "_summary" in layer[1].get("name", "")]
         assert len(summary) == 1
 
     def test_branch_text_layer_has_text_config(
@@ -251,9 +251,10 @@ class TestExtractSkeletonLayers:
             features=features,
         )
         text_layers = [
-            l
-            for l in layers
-            if l[2] == "points" and l[1].get("name", "").endswith("_branch_text")
+            layer
+            for layer in layers
+            if layer[2] == "points"
+            and layer[1].get("name", "").endswith("_branch_text")
         ]
         assert len(text_layers) == 1
         text_config = text_layers[0][1]["text"]

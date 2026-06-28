@@ -70,19 +70,19 @@ class Test3DThinningRegression:
         with np.load(baseline_file) as data:
             baseline = data["skeleton"]
 
-        assert (
-            skeleton.shape == baseline.shape
-        ), f"shape mismatch got {skeleton.shape}, expected {baseline.shape}"
-        assert np.array_equal(
-            skeleton, baseline
-        ), f"skeleton differs (hash {hash_array(skeleton)} vs {hash_array(baseline)})"
+        assert skeleton.shape == baseline.shape, (
+            f"shape mismatch got {skeleton.shape}, expected {baseline.shape}"
+        )
+        assert np.array_equal(skeleton, baseline), (
+            f"skeleton differs (hash {hash_array(skeleton)} vs {hash_array(baseline)})"
+        )
 
         baseline_features = read_feature_csv(feature_file)
         feature_keys = sorted(features)
         baseline_feature_keys = sorted(baseline_features)
-        assert (
-            feature_keys == baseline_feature_keys
-        ), f"feature set differs (got {feature_keys}, expected {baseline_feature_keys})"
+        assert feature_keys == baseline_feature_keys, (
+            f"feature set differs (got {feature_keys}, expected {baseline_feature_keys})"
+        )
 
         feature_values = np.array([features[k] for k in feature_keys], dtype=np.float64)
         baseline_feature_values = np.array(

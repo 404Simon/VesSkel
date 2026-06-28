@@ -55,12 +55,12 @@ if heavy:
             timeout=15,
         )
         assert result.returncode == 0, f"Subprocess failed (stderr): {result.stderr}"
-        assert (
-            "HEAVY:" not in result.stdout
-        ), f"Heavy modules loaded during completions: {result.stdout}"
-        assert (
-            "HEAVY:" not in result.stderr
-        ), f"Heavy modules leaked to stderr: {result.stderr}"
+        assert "HEAVY:" not in result.stdout, (
+            f"Heavy modules loaded during completions: {result.stdout}"
+        )
+        assert "HEAVY:" not in result.stderr, (
+            f"Heavy modules leaked to stderr: {result.stderr}"
+        )
 
 
 class TestDiscoverInputPaths:
@@ -511,8 +511,6 @@ class TestMainCommands:
         )
         config_path.write_text(json.dumps(config.to_dict(), indent=2))
 
-        monkeypatch.setattr(
-            sys, "argv", ["vesskel", "validate", str(config_path)]
-        )
+        monkeypatch.setattr(sys, "argv", ["vesskel", "validate", str(config_path)])
         exit_code = main()
         assert exit_code == 0

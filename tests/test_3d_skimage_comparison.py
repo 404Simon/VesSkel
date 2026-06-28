@@ -20,9 +20,9 @@ class TestSkeletonizeComparison:
         vesskel_skel = lee94_thin(image)
         scikit_skel = skeletonize(image)
 
-        assert (
-            vesskel_skel.shape == scikit_skel.shape
-        ), f"shape mismatch: vesskel {vesskel_skel.shape} vs scikit {scikit_skel.shape}"
-        assert np.array_equal(
-            vesskel_skel, scikit_skel
-        ), "skeleton mismatch: algorithms produce different results"
+        assert vesskel_skel.shape == scikit_skel.shape, (
+            f"shape mismatch: vesskel {vesskel_skel.shape} vs scikit {scikit_skel.shape}"
+        )
+        assert np.array_equal(vesskel_skel, scikit_skel), (
+            "skeleton mismatch: algorithms produce different results"
+        )
