@@ -1,5 +1,8 @@
 """Lee94 thinning algorithm for 3D binary images.
 
+Originally derived from scikit-image, BSD-3-Clause
+https://github.com/scikit-image/scikit-image
+
 This is a pure Python implementation of the
 thinning algorithm from [Lee94], based on the scikit-image Cython
 implementation in `skimage.morphology._skeletonize_lee_cy` (`_compute_thin_image`)

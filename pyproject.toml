@@ -1,6 +1,6 @@
 [project]
 name = "vesskel"
-license = "MIT AND (Apache-2.0 OR BSD-2-Clause)"
+license = "MIT"
 version = "4.0.0"
 description = "2D and 3D Skeletonization and Graph-based Analysis"
 readme = "README.md"
