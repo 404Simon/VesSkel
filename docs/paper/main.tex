@@ -44,41 +44,118 @@ Biomedical Engineering, Friedrich-Alexander-Universität Erlangen-Nürnberg}
 
 \section{Introduction}\label{sec:introduction}
 
-% This template provides an example of a standard structure that is
-% used for many scientific articles. Depending on the content you
-% present in your thesis, report, or student paper, it can make sense
-% to use this structure or to deviate from it. The only exceptions are
-% the sections \Cref{sec:code,sec:data}. These sections are mandatory
-% and must be filled according to the provided descriptions. Moreover,
-% you must fill-in the AI usage declaration in
-% \Cref{sec:ai-declaration} and date and sign the declaration of
-% academic integrity in \Cref{sec:declaration}.
-%
-% In the introduction, you provide the motivation of your work, pose
-% your research question, and describe the (medical and technical)
-% background as well as the related work (if these parts are rather
-%   extensive they can also be put in dedicated ``Background'' and/or
-% ``Related work'' sections). Make sure that the contribution of
-% \emph{your} work becomes clear in the introduction: What does it add
-% to the existing body of literature/knowledge? Why is it new and/or
-% interesting? Conclude the introduction by delineating the structure
-% of your thesis, i.\,e., by introducing the structure of the remaining
-% sections. The introduction should be internally unstructured (no
-% subsections inside the introduction).
+The retina is the only organ where the microvasculature can be imaged
+non-invasively using fundus photography~\cite{HRF}. Quantitative
+analysis of retinal vessel morphology provides clinically relevant
+biomarkers for systemic and ocular diseases such as diabetic
+retinopathy and glaucoma~\cite{improved_turtosity}. To extract
+these biomarkers from binary vessel segmentations, a common approach
+is to skeletonize the vessel mask and then derive graph-based
+features from the resulting one-pixel-wide centerline representation.
 
-- hrf als motivation: diabetes \& glaucoma diagnosis
-- limitations of existing vessel analysis tools
-- überleitung zu need for FOSS package mit nicer ux (napari,
-reproducible config, cli, fast)
-- ?? Related work: vessel segmentation, skeletonization (Lee94,
-skimage), phenotype analysis
-- General Tool Comparison table (nicht features)
-- evtl. lee und skan als basis erwähnen
-- vorstellung vesskel
-- (1) Numba-parallelized 2D/3D Lee94 implementation, (2) integrated
-feature extraction pipeline, (3) napari plugin + CLI, (4) application
-to HRF dataset with phenotype analysis
-- struktur des papers
+Several software tools have been developed for this task, including
+REAVER~\cite{REAVER}, VesselVio~\cite{VesselVio},
+VesselExpress~\cite{VesselExpress}, TWOMBLI~\cite{TWOMBLI},
+VesSAP~\cite{VesSAP}, and Skan~\cite{Skan<3}. These tools differ
+substantially as can be seen in Table~\ref{tab:tools-general}.
+
+\begin{table}[htb]
+  \centering
+  \caption{Comparison of Different Vessel Processing
+  Tools}\label{tab:tools-general}
+  \small
+  \begin{tabularx}{\textwidth}{lXXXXXX}
+    \toprule
+    Feature & REAVER & VesselVio & VesselExpress & TWOMBLI & VesSAP & Skan\\
+    \midrule
+    2D/3D & 2D & both & 3D & 2D & 3D & both\\
+    \midrule
+    GUI/Interface & interactive Matlab GUI & PyQt5 standalone app +
+    cli & Web App (Docker) and Napari Plugin & FIJI/ImageJ Plugin
+    with guided param setup & CLI only & Napari Plugin and Python Package\\
+    \midrule
+    Input Type & Raw 2D fluorescent images & Pre-binarized datasets &
+    Raw 3D Volumes & Raw 2D Images & Raw 3D Volume & Pre-skeletonized binary\\
+    \midrule
+    License & BSD 3.0 & GPLv. 3 & GPLv. 3 & ? & MIT & BSD 3-clause\\
+    \midrule
+    Segmentation & Auto (background sub + adaptive threshold +
+    morphological) & None & Auto (dual Frangi filter + statistical
+    threshold) & Auto (Steger ridge detection) & Auto (5-layer 3D
+    CNN, transfer learning) & None (skeleton analysis only)\\
+    \midrule
+    Skeletonization & Matlab bwmorph & Lee94 (custom numba impl) &
+    skimage lee94 & None & skimage lee94 & None\\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Despite their individual strengths, no existing tool
+simultaneously offers (i)~a permissive (MIT) license, (ii)~support
+for both 2D and 3D binary masks, (iii)~an interactive graphical
+interface alongside a batch-processing CLI, and (iv)~a comprehensive
+feature set that includes fractal dimension, per-segment radius
+statistics, and automatic cleanup of skeletonization artifacts. This
+fragmentation forces researchers to maintain heterogeneous,
+multi-tool pipelines that hinder reproducibility and increase the
+barrier to entry for quantitative vessel analysis.
+
+We present VesSkel, an MIT-licensed Python package for vessel
+skeletonization and graph-based phenotype analysis. VesSkel
+implements the Lee94 thinning algorithm~\cite{lee94} with Numba-based
+parallelization, supporting both 2D and 3D binary masks. The output
+is verified to be pixel-identical to scikit-image's Lee94
+implementation. In 2D benchmarks on the 45-image HRF dataset, VesSkel
+achieves a mean thinning time of 0.084~s per image, outperforming
+scikit-image's Lee (0.438~s, 5.2$\times$ slower) and VesselVio's Lee
+(0.796~s, 9.5$\times$ slower). In 3D, VesSkel (0.730~s) is
+competitive with scikit-image (1.024~s) and VesselVio (0.804~s).
+Beyond thinning, VesSkel provides an end-to-end pipeline: optional
+preprocessing (morphological closing and hole-filling), Lee94
+skeletonization, a novel junction-cleanup step that removes
+thinning-induced triangle artifacts on the skeleton graph, graph
+construction using Skan~\cite{Skan<3}, and extraction of per-image,
+per-branch, and per-node features.
+
+VesSkel computes 29 summary features covering vessel topology (node
+count, edge count, bifurcations, connected components), morphology
+(segment lengths, tortuosity, radii, fractal dimension, hyphal growth
+unit), and density (vessel area fraction). Per-branch and per-node
+features provide additional granularity for localized analyses. The
+entire pipeline is accessible through two complementary interfaces: a
+napari plugin for interactive parameter tuning and visual feedback,
+and a command-line interface for reproducible batch processing. All
+extraction and output settings are serializable to a JSON configuration
+file, enabling full experiment reproducibility.
+
+We demonstrate VesSkel on the High-Resolution Fundus (HRF)
+dataset~\cite{HRF}, which comprises 45 fundus images with manual
+vessel segmentations from three clinical groups: 15 healthy subjects,
+15 patients with diabetic retinopathy, and 15 patients with glaucoma.
+From each image, we extracted the full set of vessel phenotype
+features and evaluated their discriminative power using analysis of
+variance (ANOVA) and multi-class classification. Support vector
+machine classification with stratified 5-fold cross-validation
+achieves 91.1\% accuracy (linear kernel, $C=0.1$, top-10 features
+selected by ANOVA F-statistic), outperforming logistic regression
+(88.9\%) and random forest (82.2\%). These results confirm that the
+features captured by VesSkel encode biologically relevant differences
+in retinal vasculature.
+
+In summary, our main contributions are: (1)~a Numba-parallelized
+Lee94 thinning implementation for 2D and 3D data, validated for
+correctness against scikit-image and benchmarked against existing
+implementations; (2)~an integrated feature extraction pipeline with a
+novel junction artifact cleanup mechanism; (3)~a dual-interface
+design (napari plugin + CLI) with JSON-configurable reproducibility;
+and (4)~a demonstration of phenotype differentiation and
+classification on the HRF dataset. The remainder of this paper is
+organized as follows. Section~\ref{sec:results} presents the pipeline
+overview, skeletonization performance, feature summary, and phenotype
+analysis results. Section~\ref{sec:discussion} discusses limitations
+and future directions. Section~\ref{sec:methods} details the Lee94
+algorithm, our implementation and test strategy, the cleanup
+procedure, graph construction, and experimental setup.
 
 \section{Results}\label{sec:results}
 
@@ -452,7 +529,7 @@ fractal dimension on, hole filling with max\_hole\_size=200).
 
 \section{AI usage declaration}\label{sec:ai-declaration}
 
-Gemini, Chatgpt, Copilot, Deepseek, Opencode
+Gemini, Chatgpt, GitHub Copilot, Deepseek, Opencode
 
 In the boxes below, please specify which AI tool you used, to what
 extent, and for which task. If you did not use AI tools for the task,
