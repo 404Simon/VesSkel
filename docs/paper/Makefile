@@ -1,13 +1,19 @@
 MAIN := main
 
-all: $(MAIN).pdf
+PUML_FILES := $(wildcard figures/*.puml)
+PDF_FILES  := $(PUML_FILES:.puml=.pdf)
 
-$(MAIN).pdf: $(MAIN).tex
+all: $(PDF_FILES) $(MAIN).pdf
+
+$(MAIN).pdf: $(MAIN).tex $(PDF_FILES)
 	latexmk -pdf -interaction=nonstopmode $(MAIN)
+
+%.pdf: %.puml
+	plantuml -tpdf $<
 
 clean:
 	latexmk -C
-	rm -f *.bbl *.run.xml
+	rm -f *.bbl *.run.xml $(PDF_FILES)
 
 fmt:
 	tex-fmt *.tex --recursive

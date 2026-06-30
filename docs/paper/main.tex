@@ -246,19 +246,32 @@ procedure, graph construction, and experimental setup.
 % the corresponding text.
 
 \subsection{Overview of the VesSkel Pipeline}\label{sec:results:overview}
-vorstellung des high-level workflow:
 
-1. binary mask
-2. (optional) preprocessing (closing, hole-filling)
-3. Lee thinning
-4. (optional) junction cleanup
-5. graph construction
-6. feature extraction
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.9\linewidth]{figures/pipeline_overview.pdf}
+  \caption{VesSkel processing pipeline}
+  \label{fig:pipeline}
+\end{figure}
 
-pipeline verfügbar als napari plugin (interactive, parameter tuning,
-config save/load) und CLI für batching
+VesSkel provides an end-to-end pipeline from binary vessel masks to
+quantitative phenotype features, as illustrated in
+Figure~\ref{fig:pipeline}. The pipeline accepts pre-binarized vessel
+segmentations and optionally applies preprocessing (morphological
+closing and hole filling) to remove segmentation artifacts. The
+cleaned mask is then skeletonized using the Lee94 thinning
+algorithm~\cite{lee94}. An optional junction-cleanup step detects and
+removes thinning-induced triangle artifacts from the skeleton graph.
+The cleaned skeleton is converted to a graph representation using
+Skan~\cite{Skan<3}, from which features are extracted at three
+granularity levels: per-image summary statistics, per-branch
+measurements, and per-node topological properties.
 
-- Figure: pipeline diagram + evtl. example input/skeleton/branches/features
+The pipeline is accessible through two complementary interfaces: a
+napari plugin for interactive parameter tuning with real-time visual
+feedback, and a command-line interface for reproducible batch
+processing. All extraction parameters are serializable to a
+configuration file, enabling full experiment reproducibility.
 
 \subsection{Skeletonization Performance}\label{sec:results:performance}
 
