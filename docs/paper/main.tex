@@ -273,6 +273,95 @@ feedback, and a command-line interface for reproducible batch
 processing. All extraction parameters are serializable to a
 configuration file, enabling full experiment reproducibility.
 
+\subsection{Preprocessing and Artifact Removal}\label{sec:results:cleanup}
+
+Binary vessel segmentations from automatic or manual annotation
+frequently contain small holes and gaps, particularly in regions where
+vessels are faint or at vessel crossings. During skeletonization, these
+holes cause the thinning algorithm to trace circular paths around their
+boundaries, producing spurious loops in the resulting skeleton graph.
+To prevent such artifacts, VesSkel applies morphological closing
+followed by hole filling as an optional preprocessing step before
+thinning. The hole filling operation fills all enclosed background
+regions in the mask. Holes exceeding a configurable size threshold are
+reverted to preserve legitimate anatomical voids.
+
+\begin{figure}[htb]
+  \centering
+  \begin{subfigure}[b]{0.3\linewidth}
+    \includegraphics[width=\linewidth]{figures/hole_filling_input_mask.png}
+    \caption{Input mask with hole}
+    \label{fig:hole_filling:a}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.3\linewidth}
+    \includegraphics[width=\linewidth]{figures/no_hole_filling_skeleton.png}
+    \caption{Without hole filling}
+    \label{fig:hole_filling:b}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.3\linewidth}
+    \includegraphics[width=\linewidth]{figures/hole_filling_skeleton.png}
+    \caption{With hole filling}
+    \label{fig:hole_filling:c}
+  \end{subfigure}
+  \caption[Effect of hole filling on skeletonization quality]{Effect of
+    hole filling on skeletonization quality. (a) Input segmentation mask
+    with holes inside a vessel. (b) Without hole filling, the thinning
+    algorithm traces the hole boundaries, creating circular skeleton
+    artifacts. (c) After hole filling, the skeleton follows the correct
+  vessel centerline.}
+  \label{fig:hole_filling}
+\end{figure}
+
+Figure~\ref{fig:hole_filling} demonstrates the effect on a
+representative region of an HRF fundus image. The input segmentation
+mask (Figure~\ref{fig:hole_filling}a) contains holes in the vessel
+segment, creating circular skeleton artifacts when thinned
+directly (Figure~\ref{fig:hole_filling}b). With hole filling, the
+skeleton follows the correct vessel centerline without spurious loops
+(Figure~\ref{fig:hole_filling}c).
+
+Despite preprocessing, a small number of artifacts may persist after
+thinning. The most common are triangle/diamond artifacts at junction
+points, which arise from the discrete marching behavior of the
+thinning algorithm at bifurcation sites. VesSkel's optional junction
+cleanup step detects these via the cycle basis of the skeleton graph.
+For each cycle, the perimeter is compared to the local vessel diameter
+estimated from the Euclidean distance transform at the cycle nodes.
+Cycles whose perimeter is small relative to the local vessel diameter
+are collapsed to a single pixel at their geometric centroid
+(Figure~\ref{fig:junction_cleanup}b).
+
+\begin{figure}[htb]
+  \centering
+  \begin{subfigure}[b]{0.4\linewidth}
+    \includegraphics[width=\linewidth]{figures/no_junction_cleanup.png}
+    \caption{Before cleanup}
+    \label{fig:junction_cleanup:a}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.4\linewidth}
+    \includegraphics[width=\linewidth]{figures/junction_cleanup.png}
+    \caption{After cleanup}
+    \label{fig:junction_cleanup:b}
+  \end{subfigure}
+  \caption[Junction cleanup removes triangle artifacts]{Junction
+    cleanup removes triangle artifacts. (a) A triangle artifact at
+    a vessel bifurcation after thinning. (b) After cleanup, the artifact
+    is removed and the skeleton correctly represents the bifurcation
+  topology.}
+  \label{fig:junction_cleanup}
+\end{figure}
+
+A key observation from our experiments is that hole filling alone
+resolves the vast majority of skeletonization artifacts before they
+appear in the graph. When preprocessing is active, junction cleanup
+becomes redundant for most images. This makes mask-level
+preprocessing the primary and most effective defense against thinning
+artifacts, with junction cleanup serving as a secondary safety net
+for the remaining edge cases.
+
 \subsection{Skeletonization Performance}\label{sec:results:performance}
 
 zahlen und fakten
@@ -422,6 +511,8 @@ removal preserving
 \subsection{Cleanup Steps}\label{sec:methods:cleanup}
 
 - closing und hole filling der maske erwähnen
+- sagen welche parameter wir nutzen, z.b. "In our experiments, we
+used \texttt{max\_hole\_size = 300}"
 - Triangle/diamond artifacts from skeletonization detected via
 cycle-basis on skan graph: cycles with perimeter < 2.5x local vessel
 diameter are collapsed to a centroid pixel.
