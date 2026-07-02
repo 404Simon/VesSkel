@@ -510,12 +510,49 @@ removal preserving
 
 \subsection{Cleanup Steps}\label{sec:methods:cleanup}
 
-- closing und hole filling der maske erwähnen
-- sagen welche parameter wir nutzen, z.b. "In our experiments, we
-used \texttt{max\_hole\_size = 300}"
-- Triangle/diamond artifacts from skeletonization detected via
-cycle-basis on skan graph: cycles with perimeter < 2.5x local vessel
-diameter are collapsed to a centroid pixel.
+Binary vessel masks frequently contain small holes and gaps
+introduced during segmentation that would produce circular skeleton
+artifacts during thinning (Section~\ref{sec:results:cleanup}).
+VesSkel addresses these through optional preprocessing operations
+applied before skeletonization. Hole filling
+(\texttt{scipy.ndimage.binary\_fill\_holes}) fills all enclosed
+background regions in the mask. To preserve legitimate anatomical
+voids, the \texttt{max\_hole\_size} parameter reverts filled holes
+whose area exceeds a configurable threshold. VesSkel also offers
+morphological closing (\texttt{scipy.ndimage.binary\_closing}) as an
+additional preprocessing step; however, on the HRF dataset
+experiments showed no noticeable improvement over hole filling alone,
+so closing was disabled (\texttt{closing\_iterations = 0}) in our
+experiments. We used \texttt{max\_hole\_size = 300}.
+
+Some thinning-induced artifacts, particularly small triangle
+structures at bifurcation points, may survive mask-level
+preprocessing. VesSkel removes these by analyzing the skeleton graph
+after thinning. The skeleton is converted to a NetworkX graph $G =
+(V, E)$ via Skan's \texttt{skeleton\_to\_nx} function~\cite{Skan<3},
+and all elementary cycles $\mathcal{C}$ are enumerated using
+\texttt{networkx.\\cycle\_basis}. For a cycle $c = (v_1, \dots, v_n)
+\in \mathcal{C}$ with $v_{n+1} = v_1$, the perimeter is
+\[
+  P(c) = \sum_{i=1}^{n} \lVert \operatorname{pos}(v_{i+1}) -
+  \operatorname{pos}(v_i) \rVert_2
+\]
+and the local vessel diameter is estimated as
+\[
+  D(c) = \frac{2}{n} \sum_{i=1}^{n}
+  \operatorname{EDT}(\operatorname{pos}(v_i)),
+\]
+where $\operatorname{pos}(v)$ gives the pixel coordinates of node $v$
+and $\operatorname{EDT}$ is the Euclidean distance transform of the
+vessel mask. A cycle is classified as an artifact if
+\[
+  P(c) < \tau \cdot D(c)
+\]
+with a default threshold of $\tau = 2.5$. Each such cycle --- or
+connected group of overlapping cycles --- is collapsed to a single
+pixel at its geometric centroid. External edges previously connected
+to the removed nodes are reconnected to this centroid via Bresenham
+line rasterization, preserving graph connectivity.
 
 \subsection{Graph Construction and Features}\label{sec:methods:graph}
 
@@ -540,7 +577,7 @@ dass die blutgefäße sich verändern
 \paragraph{Runtime Tests}\label{sec:methods:setup:runtime}
 
 - Hardware, feature configuration (junction cleanup on, radius on,
-fractal dimension on, hole filling with max\_hole\_size=200).
+fractal dimension on, hole filling with max\_hole\_size=300).
 
 \paragraph{Phenotype Differentiation}\label{sec:methods:setup:phenodiff}
 
