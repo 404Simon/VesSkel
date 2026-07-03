@@ -589,12 +589,25 @@ transform), fractal dimension (box-counting, log-log slope), HGU
 
 \subsection{Dataset and Preprocessing}\label{sec:methods:data}
 
-- HRF dataset: 45 fundus images (15 healthy, 15 DR, 15 glaucoma) with
-manual vessel segmentation masks
-- 3D: brain und vessap volume erwähnen
-- KEINE medizinischen details -> nur kurzer satz zu krankheiten und
-dass die blutgefäße sich verändern
-- evtl. nach 5. schieben
+We evaluate VesSkel on two datasets. The primary evaluation uses the
+High-Resolution Fundus (HRF) dataset~\cite{HRF}, which comprises 45
+fundus images ($3504 \times 2336$~px) with corresponding manual
+vessel segmentation masks and field-of-view masks. The dataset
+includes three clinical groups of 15 images each: healthy subjects,
+patients with diabetic retinopathy, and patients with glaucoma. These
+conditions are known to alter retinal vessel morphology, providing a
+suitable test bed for phenotype analysis.
+
+For 3D benchmarking, we use a test volume from the VesSAP
+Repository~\cite{VesSAP}, which we binarized before and the
+scikit-image brain volume~\cite{skimage}.
+
+Preprocessing follows the procedure described in
+Section~\ref{sec:results:cleanup}. Binary vessel masks are first
+masked by the provided field-of-view mask to exclude regions outside
+the retina. Hole filling removes enclosed background regions while
+preserving anatomical voids. Closing is disabled since the HRF manual
+segmentations contain few gaps.
 
 \subsection{Experimental Setup}\label{sec:methods:setup}
 
