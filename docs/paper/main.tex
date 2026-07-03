@@ -483,21 +483,45 @@ fundus, no longitudinal data
 
 \subsection{Lee94 Thinning Algorithm}\label{sec:methods:lee}
 
-- nur kurz wichtigste punkte an denen ich ansetze erklären und lee
-paper referenzieren
-
-- Topology-preserving: 6-directional sub-iteration, border-pixel
-removal preserving
-- (1) endpoints
-- (2) Euler characteristic
-- (3) simple-point condition
+The Lee94 algorithm~\cite{lee94} produces topologically
+preserving skeletons by iteratively removing border pixels from a
+binary shape until only a one-voxel-wide medial axis remains. The
+algorithm proceeds in six directional sub-iterations (north, south,
+east, west, up, down). In each sub-iteration, a border pixel is
+removed only if it satisfies four criteria:
+(1)~it is a \textbf{border point} (at least one 4-/6-neighbor is
+background), (2)~it is \textbf{not an endpoint} (more than one
+foreground neighbor in the 8-/26-neighborhood),
+(3)~removing it leaves the \textbf{Euler characteristic} unchanged
+($\Delta\chi = 0$, preventing hole or tunnel creation), and
+(4)~it is a \textbf{simple point} (the foreground neighbors form a
+single connected component, preventing disconnection). In 3D,
+conditions~(3) and~(4) are complementary; in 2D,
+condition~(3) is redundant (see below).
 
 \subsection{Implementation Details}\label{sec:methods:impl}
 
 \paragraph{Deviations of this Implementation}\label{sec:methods:impl:deviations}
 
-- in 2d euler fällt in 2D weg (proof übernehmen?)
-- usw.
+Our 2D implementation differs from the canonical Lee94 algorithm in
+two important ways. First, we proved that the Euler invariant check
+is redundant in 2D (full proof in the project documentation). In 2D,
+a hole cannot be created by removing a border point (any border point
+has at least one background 4-neighbor, providing an escape path), and
+a hole cannot be eliminated by removing a simple point (the
+simple-point condition already prevents disconnection). Since
+$\Delta\chi = \Delta O - \Delta H$ and $\Delta H = 0$ always holds,
+the simple-point condition ($\Delta O = 0$) guarantees $\Delta\chi =
+0$. Omitting the Euler check removes the need for octree construction
+and Euler LUT lookups, contributing directly to the 2D speedups
+reported in Section~\ref{sec:results:performance}.
+
+Second, 2D images are processed natively as 2D arrays rather than
+embedded in a 3D volume. This collapses the 26-neighborhood to an
+8-neighborhood, reduces border detection from six directions to four,
+and halves memory usage.
+
+% TODO: add 3D details
 
 \paragraph{Numba-Parallelized Implementation}\label{sec:methods:impl:numba}
 
