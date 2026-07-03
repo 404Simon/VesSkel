@@ -659,8 +659,10 @@ conditions are known to alter retinal vessel morphology, providing a
 suitable test bed for phenotype analysis.
 
 For 3D benchmarking, we use a test volume from the VesSAP
-Repository~\cite{VesSAP} ($600\times304\times325$~voxels), which we
-binarized, and the scikit-image brain volume~\cite{skimage}.
+Repository~\cite{VesSAP} ($600\times304\times325$~voxels). The raw
+volume was preprocessed by applying a median filter with radii $(x,
+y, z) = (1, 1, 0)$, followed by Li thresholding to obtain a binary
+vessel mask. We also use the scikit-image brain volume~\cite{skimage}.
 
 Preprocessing follows the procedure described in
 Section~\ref{sec:results:cleanup}. Binary vessel masks are first
@@ -712,18 +714,16 @@ the worker count more closely.
 
 \section{Data availability}\label{sec:data}
 
-% Describe from where you obtained the public data underlying your
-% work. Your descriptions should be detailed enough to allow others to
-% access the exact same data and to reproduce your results, using the
-% code you linked in \Cref{sec:code}. If you generated data yourself
-% (e.g., through simulation), either deposit the data in a public
-% repository such as Zenodo and provide the DOI here or explain how
-% others can rerun the simulation to generate the data themselves. If
-% you used private or sensitive data that is not public and cannot be
-% made publicly available, explain why this is the case. Write ``Not
-% applicable'' if and only if you did not use any data for your work.
-
-- HRF dataset reference (Budai et al., 2013), CC-BY 4.0.
+The High-Resolution Fundus (HRF) dataset~\cite{HRF} is publicly
+available at
+\url{https://www5.cs.fau.de/research/data/fundus-images/} under the
+CC-BY 4.0 license. The VesSAP test volume~\cite{VesSAP} was
+downloaded from
+\url{https://github.com/vessap/vessap/blob/master/data/1.nii.gz}. The
+scikit-image brain volume~\cite{skimage} is bundled with the
+scikit-image library. All derived data (skeleton baselines, feature
+CSV files and the binarized VesSAP 3D Test-Volume) are included in
+the VesSkel repository under \texttt{tests/}.
 
 \printbibliography
 
