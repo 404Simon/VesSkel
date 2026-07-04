@@ -1,7 +1,8 @@
 \usepackage[left=3cm,right=3cm,top=3cm,bottom=3cm]{geometry}
 \usepackage{graphicx, amsmath, amssymb, amsthm, mathtools, caption,
   subcaption, xcolor, authblk, csquotes, booktabs, multirow, multicol,
-  amsmath, hyperref, cleveref, xurl, tcolorbox, tabularx}
+  amsmath, hyperref, cleveref, xurl, tcolorbox, tabularx,
+  longtable, pdflscape}
 \usepackage[style=vancouver,maxcitenames=1,mincitenames=1]{biblatex}
 \addbibresource{references.bib}
 \tcbuselibrary{breakable}
@@ -12,6 +13,15 @@ pdfpagemode=UseOutlines}
 \captionsetup[table]{labelfont={bf},font=small,labelformat={default},labelsep=period,name={Table}}
 \newtcolorbox{answerbox}[1]{breakable, colback=white, coltitle=black,
 fonttitle=\bfseries, colframe=gray!50!white, arc=0mm, title={#1}}
+\newcommand{\featcompheader}{%
+  \textbf{Feature} & \textbf{Description} &
+  \rotatebox{90}{\textbf{REAVER}} &
+  \rotatebox{90}{\textbf{VesselVio}} &
+  \rotatebox{90}{\textbf{VesselExpress}} &
+  \rotatebox{90}{\textbf{TWOMBLI}} &
+  \rotatebox{90}{\textbf{VesSAP}} &
+  \rotatebox{90}{\textbf{Skan}} &
+  \rotatebox{90}{\textbf{VesSkel}}}
 \newcommand{\namesigdate}[1]{%
   \begin{minipage}{.5\linewidth}
     \vspace{2.0cm}\hrule\smallskip

@@ -755,26 +755,24 @@ the VesSkel repository under \texttt{tests/}.
 
 \section{Supplementary tables}\label{appendic:tables}
 
-% Supplementary tables that provide additional results but do not fit
-% into the narrative of the main text can be put here. All
-% supplementary tables should be referenced from the main text and
-% should be listed here in the order of these references. Delete this
-% section if not needed.
-%
-% \begin{table}[htb]
-%   \centering
-%   \caption{Example of a table generated with the \texttt{tabular}
-%     environment that has a slightly simpler syntax than the
-%     \texttt{tabularx} environment but does not support flexible-width
-%   columns.}\label{tab:supptab}
-%   \begin{tabular}{lll}
-%     \toprule
-%     Column 1 & Column 2 & Column 3\\
-%     \midrule
-%     X & Y & Z \\
-%     \bottomrule
-%   \end{tabular}
-% \end{table}
+\begin{landscape}
+\footnotesize\setlength{\tabcolsep}{3pt}
+\begin{longtable}{p{4.5cm} p{8cm} *{7}{>{\centering\arraybackslash}p{1.1cm}}}
+\caption{Feature comparison across vasculature analysis tools.}
+\label{tab:feature-comparison}\\
+\toprule
+\featcompheader \\
+\midrule
+\endfirsthead
+\toprule
+\featcompheader \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\input"| xlsx2csv ../../Feature_Comparison.xlsx | python3 gen_feature_csv.py"
+\end{longtable}
+\end{landscape}
 
 \clearpage
 
