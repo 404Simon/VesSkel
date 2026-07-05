@@ -435,12 +435,27 @@ multi-core workstations, the speedup may approach the worker count more closely.
 
 \subsection{Skeleton and Graph Features}\label{sec:results:features}
 
-- Tabelle in appendix und nur "summary" der tools erwähnen -> anzahl
-gesamtfeatures aller tools und nur in vesskel eingebaute features als
-"relevant" erwähnen und grobe unterteilung hier erwähnen:
-- topology: nodes, edges, endpoints, bifurcations
-- morphology: lengths, tortuosity, radii, fractal dimension, HGU
-- density: vessel area fraction
+Table~\ref{tab:feature-comparison} surveys 78 individual feature rows
+across seven vasculature analysis tools. VesSkel extracts 29 per-image
+summary features spanning three core dimensions of vessel phenotype
+analysis: topology, morphology, and density.
+
+Topology features describe the graph structure of the vascular
+network---node count, edge count, endpoint count, bifurcation count,
+connected components, and degree statistics. Morphology features capture
+the shape of individual vessel segments---length statistics (total,
+mean, standard deviation, minimum, maximum), tortuosity (mean and
+standard deviation), fractal dimension (box-counting estimate with
+R$^2$ fit quality), hyphal growth unit, and radius and diameter
+statistics (mean, standard deviation, minimum, maximum). Density
+features quantify vascular coverage---total vessel area and vessel area
+fraction within the field of view. Beyond these per-image summaries,
+VesSkel also outputs per-branch measurements (radius, diameter, volume,
+surface area, tortuosity for each segment) and per-node properties
+(degree, endpoint/junction classification, local radius), enabling
+localized analyses. The technical details of graph construction and
+feature computation are given in
+Section~\ref{sec:methods:graph}.
 
 \subsection{Phenotype Differentiation}\label{sec:results:phenodiff}
 
@@ -640,12 +655,66 @@ line rasterization, preserving graph connectivity.
 
 \subsection{Graph Construction and Features}\label{sec:methods:graph}
 
-- Build vessel graph via skan (Skeleton object -> CSR graph).
-- Features computed: node degree, edge length (branch-distance),
-tortuosity (branch/euclidean ratio), vessel radii (distance
-transform), fractal dimension (box-counting, log-log slope), HGU
-(total length / endpoint count).
-- selbst implementiertes zeugs genauer erläutern
+VesSkel converts the cleaned binary skeleton into a graph
+representation using Skan's \texttt{Skeleton} object
+\cite{Skan<3}, which builds a sparse adjacency matrix where each
+foreground pixel is a node connected to its 8-neighbors (2D) or
+26-neighbors (3D). Node degrees are computed from this adjacency
+matrix, and each node is classified as an endpoint (degree~1), a
+pass-through pixel (degree~2), or a junction (degree~$\ge$3).
+
+Skan's \texttt{summarize} function decomposes this graph into
+branches (edges between junction or endpoint nodes). For each branch
+we obtain its path length along the skeleton (\texttt{branch-distance})
+and the straight-line distance between its endpoints
+(\texttt{euclidean-distance}). Tortuosity is then computed as the ratio
+of branch-distance to euclidean-distance.
+
+The 29 per-image summary features described in
+Section~\ref{sec:results:features} are computed as follows.
+Topological features are derived from the branch summary table
+produced by \texttt{skan.summarize}. Node degrees are computed by
+counting how many times each node appears as a branch endpoint in the
+table's \texttt{node-id-src} and \texttt{node-id-dst} columns. From
+these degrees we obtain the number of endpoints (degree~1),
+bifurcations (degree~$\ge$3), the number of unique nodes, and the
+mean and maximum degree. A sparse adjacency matrix is reconstructed
+from the branch endpoint pairs and passed to
+\texttt{scipy.sparse.csgraph.connected\_components} to identify
+disconnected vessel fragments. Length statistics (total, mean,
+standard deviation, minimum, maximum) and tortuosity statistics (mean,
+standard deviation) are aggregated from the \texttt{branch-distance}
+and \texttt{euclidean-distance} columns of the same table.
+
+Fractal dimension is estimated via box-counting with a
+Numba-parallelized implementation. Box sizes are chosen as powers of
+two, $s = 2, 4, 8, \dots, 2^{\lfloor \log_2(\min(d_1,\dots,d_n)/4)
+\rfloor}$, where $d_1,\dots,d_n$ are the spatial dimensions of the
+image. At each scale the number of boxes containing at least one
+skeleton pixel is counted in parallel across spatial dimensions. The
+fractal dimension is the negative slope of a linear fit to $\log N(s)$
+vs.\ $\log s$, where $N(s)$ is the box count at scale $s$; the R$^2$
+of this fit quantifies the quality of the power-law approximation.
+
+The hyphal growth unit (HGU) is computed as the ratio of total vessel
+length to endpoint count,
+\[
+  \mathrm{HGU} = \frac{L_\text{total}}{N_\text{endpoints}},
+\]
+representing the average branch length per terminal segment. Vascular
+coverage is quantified by two additional features: \texttt{vessel\_area},
+the total number of foreground pixels in the binary mask, and
+\texttt{vessel\_area\_fraction}, this count divided by the total number
+of image pixels. Vessel radii are obtained via the Euclidean Distance
+Transform (EDT) of the original binary mask. Sampling the EDT at
+skeleton pixel positions
+yields the local vessel radius at every centerline point, from which
+per-image statistics (mean, standard deviation, minimum, maximum radius
+and diameter) are aggregated. Per-segment radius statistics are
+computed by sampling the EDT along each branch individually; we
+additionally estimate each segment's volume as $\pi \sum_i r_i^2$ and
+surface area as $2\pi \sum_i r_i$, where $r_i$ are the radius values
+along the segment.
 
 \subsection{Dataset and Preprocessing}\label{sec:methods:data}
 
@@ -756,22 +825,22 @@ the VesSkel repository under \texttt{tests/}.
 \section{Supplementary tables}\label{appendic:tables}
 
 \begin{landscape}
-\footnotesize\setlength{\tabcolsep}{3pt}
-\begin{longtable}{p{4.5cm} p{8cm} *{7}{>{\centering\arraybackslash}p{1.1cm}}}
-\caption{Feature comparison across vasculature analysis tools.}
-\label{tab:feature-comparison}\\
-\toprule
-\featcompheader \\
-\midrule
-\endfirsthead
-\toprule
-\featcompheader \\
-\midrule
-\endhead
-\bottomrule
-\endfoot
-\input"| xlsx2csv ../../Feature_Comparison.xlsx | python3 gen_feature_csv.py"
-\end{longtable}
+  \footnotesize\setlength{\tabcolsep}{3pt}
+  \begin{longtable}{p{4.5cm} p{8cm} *{7}{>{\centering\arraybackslash}p{1.3cm}}}
+    \caption{Feature comparison of selected analysis tools.}
+    \label{tab:feature-comparison}\\
+    \toprule
+    \featcompheader \\
+    \midrule
+    \endfirsthead
+    \toprule
+    \featcompheader \\
+    \midrule
+    \endhead
+    \bottomrule
+    \endfoot
+    \input"| python3 gen_feature_csv.py"
+  \end{longtable}
 \end{landscape}
 
 \clearpage

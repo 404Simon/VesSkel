@@ -5,7 +5,7 @@ PDF_FILES  := $(PUML_FILES:.puml=.pdf)
 
 all: $(PDF_FILES) $(MAIN).pdf
 
-$(MAIN).pdf: $(MAIN).tex $(PDF_FILES) gen_feature_csv.py
+$(MAIN).pdf: $(MAIN).tex $(PDF_FILES) gen_feature_csv.py ../../Feature_Comparison.xlsx
 	latexmk -pdf -shell-escape -interaction=nonstopmode $(MAIN)
 
 %.pdf: %.puml

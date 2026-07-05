@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 """Generate LaTeX table rows for the Feature Comparison supplementary table.
 
-Reads xlsx2csv output from stdin, strips the General section (anything
-after the first blank line), and writes LaTeX `column & column & ... \\`
-rows to stdout. Parenthetical remarks in tool cells (e.g. "yes (3D volume)")
-become \textsuperscript{letter} markers, with a notes block at the bottom.
+Reads the Feature Comparison spreadsheet via xlsx2csv, strips the General
+section (anything after the first blank line), and writes LaTeX
+`column & column & ... \\` rows to stdout. Parenthetical remarks in tool
+cells (e.g. "yes (3D volume)") become \textsuperscript{letter} markers,
+with a notes block at the bottom.
 
-Usage: xlsx2csv Feature_Comparison.xlsx | python3 gen_feature_csv.py
+Usage: python3 gen_feature_csv.py
+       python3 gen_feature_csv.py <path/to/Feature_Comparison.xlsx>
 """
 
 import csv
+import os
 import re
+import subprocess
 import sys
 
 
@@ -19,12 +23,22 @@ def tex_escape(s):
     return re.sub(r"([_%&$#_{}~^])", r"\\\1", s)
 
 
+def normalize_val(val):
+    """Normalise 'omitted' to 'no' for uniform display."""
+    v = val.strip()
+    if v.lower().startswith("omitted"):
+        return "no" + v[len("omitted") :]
+    return v
+
+
 def parse_note(val, col_idx, tool_names, notes):
     """If val = 'yes (comment)', record footnote letter; return 'yes\\textsuperscript{X}'."""
-    m = re.match(r"^(yes|no|nope)\s*\((.+)\)$", val.strip())
+    m = re.match(r"^(yes|no|nope|omitted)\s*\((.+)\)$", val.strip())
     if not m:
-        return tex_escape(val)
+        return tex_escape(normalize_val(val))
     base, comment = m.group(1), m.group(2).strip()
+    if base == "omitted":
+        base = "no"
     tool = tool_names[col_idx - 2]
     letters = "abcdefghijklmnopqrstuvwxyz"
     key = (tool, comment)
@@ -33,12 +47,26 @@ def parse_note(val, col_idx, tool_names, notes):
     return tex_escape(base) + r"\textsuperscript{" + notes[key] + r"}"
 
 
+# ── Locate spreadsheet ────────────────────────────────────────────────
+if len(sys.argv) > 1:
+    xlsx_path = sys.argv[1]
+else:
+    xlsx_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..",
+        "..",
+        "Feature_Comparison.xlsx",
+    )
+
 # ── Read CSV rows until first blank line ──────────────────────────────
-rows = []
-for row in csv.reader(sys.stdin):
-    if not any(cell.strip() for cell in row):
-        break
-    rows.append(row)
+with subprocess.Popen(
+    ["xlsx2csv", xlsx_path], stdout=subprocess.PIPE, text=True
+) as proc:
+    rows = []
+    for row in csv.reader(proc.stdout):
+        if not any(cell.strip() for cell in row):
+            break
+        rows.append(row)
 
 # rows[0] = header (Feature, Description, REAVER, …, VesSkel)
 # rows[1:] = feature data (78 rows, 9 columns each)
