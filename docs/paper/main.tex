@@ -459,20 +459,71 @@ Section~\ref{sec:methods:graph}.
 
 \subsection{Phenotype Differentiation}\label{sec:results:phenodiff}
 
-- ANOVA: which features discriminate best between groups
-- figure: feature distribution differences for phenotypes (nur die top anova!)
-- correlation heatmap, summary tables -> könnte zu lang werden, aufs
-wichtigste beschränken!
-- key findings zusammenfassen
-- nur zeugs was raussticht erwähnen, tabellen etc. in appendix und referenzieren
+We assessed whether the 29 per-image summary features capture
+biologically relevant differences between the three clinical groups
+using one-way ANOVA (details in \Cref{sec:methods:setup:phenodiff}).
+The most discriminating features were mean radius and mean diameter
+(both F=114.3, $p \approx 10^{-17}$), followed by mean segment volume
+(F=43.7, $p \approx 10^{-11}$) and vessel area and vessel area
+fraction (F=39.1, $p \approx 10^{-10}$, \Cref{fig:anova}).
 
-\subsection{Pheontype Classification}\label{sec:results:phenoclass}
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.85\linewidth]{figures/feature_difference_anova.png}
+  \caption{Top ten features ranked by ANOVA F-statistic for
+  differences among the three phenotypes.}
+  \label{fig:anova}
+\end{figure}
 
-- Multi-class cross-validated classifier comparison: RF, SVM,
-Logistic Regression, ensembling
-- Table: per-classifier accuracy (5-fold CV). Best model achieves X% accuracy.
-- (ROC curves, confusion matrices, feature importance)
-- Best-performing model and key predictive features
+Examination of group means reveals a consistent phenotypic ordering:
+healthy retinas exhibit the largest mean vessel radius $5.39 \pm
+0.41$~px) and highest vascular density (vessel area fraction $0.093
+\pm 0.009$), glaucoma subjects show the thinnest vessels across all
+metrics (mean radius $3.86 \pm 0.19$~px; vessel area fraction $0.069
+\pm 0.006$), and diabetic retinopathy subjects occupy an intermediate
+position with respect to the vessel radius. This gradient mirrors the
+clinical expectation that both conditions induce vascular remodeling
+through distinct pathological mechanisms. The full set of group-wise
+means for the top ten features is reported in
+\Cref{tab:top-anova-feature-means}.
+
+Many features exhibit strong mutual correlations, reflecting inherent
+redundancy among morphological measurements of the same vascular
+network. The correlation structure supports dimensionality reduction
+for the classification task in the following section.
+
+\subsection{Phenotype Classification}\label{sec:results:phenoclass}
+
+To evaluate the predictive power of the extracted feature set, we
+trained and compared five classifiers using stratified 5-fold
+cross-validation: support vector machine (SVM), logistic regression,
+random forest, a voting ensemble, and a stacking ensemble (details in
+\Cref{sec:methods:setup:phenoclass}). Features were reduced to the
+top ten by ANOVA F-statistic and standardized within each training
+fold to prevent data leakage.
+
+SVM with a linear kernel achieved the highest mean accuracy of
+91.1\%, outperforming logistic regression (88.9\%), the voting and
+stacking ensembles (both 84.4\%), and random forest (82.2\%)
+(\Cref{fig:model-comparison}).
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/final_model_comparison.png}
+\caption{Classification performance (mean accuracy $\pm$~SD) across
+five models with stratified 5-fold cross-validation on the HRF dataset.}
+\label{fig:model-comparison}
+\end{figure}
+
+Confusion matrices for each classifier are shown in the appendix
+(\Cref{fig:confusion-matrices}). An analysis of SVM accuracy across
+different numbers of selected features (appendix
+\Cref{fig:svm-k-sweep}) confirms that the top ten features provide
+highest test-accuracy.
+
+These results demonstrate that the captured features encode relevant
+phenotype information, and that a linear SVM operating on a compact
+feature subset can reliably distinguish the three clinical groups.
 
 \section{Discussion}\label{sec:discussion}
 
@@ -633,19 +684,19 @@ and all elementary cycles $\mathcal{C}$ are enumerated using
 \texttt{networkx.\\cycle\_basis}. For a cycle $c = (v_1, \dots, v_n)
 \in \mathcal{C}$ with $v_{n+1} = v_1$, the perimeter is
 \[
-  P(c) = \sum_{i=1}^{n} \lVert \operatorname{pos}(v_{i+1}) -
-  \operatorname{pos}(v_i) \rVert_2
+P(c) = \sum_{i=1}^{n} \lVert \operatorname{pos}(v_{i+1}) -
+\operatorname{pos}(v_i) \rVert_2
 \]
 and the local vessel diameter is estimated as
 \[
-  D(c) = \frac{2}{n} \sum_{i=1}^{n}
-  \operatorname{EDT}(\operatorname{pos}(v_i)),
+D(c) = \frac{2}{n} \sum_{i=1}^{n}
+\operatorname{EDT}(\operatorname{pos}(v_i)),
 \]
 where $\operatorname{pos}(v)$ gives the pixel coordinates of node $v$
 and $\operatorname{EDT}$ is the Euclidean distance transform of the
 vessel mask. A cycle is classified as an artifact if
 \[
-  P(c) < \tau \cdot D(c)
+P(c) < \tau \cdot D(c)
 \]
 with a default threshold of $\tau = 2.5$. Each such cycle --- or
 connected group of overlapping cycles --- is collapsed to a single
@@ -699,7 +750,7 @@ of this fit quantifies the quality of the power-law approximation.
 The hyphal growth unit (HGU) is computed as the ratio of total vessel
 length to endpoint count,
 \[
-  \mathrm{HGU} = \frac{L_\text{total}}{N_\text{endpoints}},
+\mathrm{HGU} = \frac{L_\text{total}}{N_\text{endpoints}},
 \]
 representing the average branch length per terminal segment. Vascular
 coverage is quantified by two additional features: \texttt{vessel\_area},
@@ -762,12 +813,35 @@ the worker count more closely.
 
 \paragraph{Phenotype Differentiation}\label{sec:methods:setup:phenodiff}
 
-- anova
+To identify which features best discriminate between the three
+clinical groups (healthy, diabetic retinopathy, glaucoma), we
+performed a one-way ANOVA for each of the 29 per-image summary
+features using \texttt{scipy.stats.f\_oneway}. Features were ranked
+by their F-statistic, and group-wise means and standard deviations
+were computed within each phenotype to characterize the direction of
+differences.
 
 \paragraph{Phenotype Prediction}\label{sec:methods:setup:phenoclass}
 
-- classifiers: Random Forest/SVM/LogReg/Stacking classifiers with
-5-fold stratified cross-validation -> erwähnen, dass aus sklearn genommen
+We compared five classifiers from scikit-learn~\cite{sklearn}: a
+support vector machine (\texttt{SVC}), logistic regression
+(\texttt{LogisticRegression} with \texttt{class\_weight="balanced"}),
+random forest (\texttt{RandomForestClassifier}), a hard-voting
+ensemble (\texttt{VotingClassifier}), and a stacking ensemble
+(\texttt{StackingClassifier} with logistic regression as the
+meta-learner). All models were evaluated with stratified 5-fold
+cross-validation using a fixed random seed to ensure reproducibility.
+Features were filtered by removing zero-variance columns (using
+\texttt{VarianceThreshold}), selecting the top ten features by ANOVA
+F-statistic (\texttt{SelectKBest}), and standardizing to zero mean
+and unit variance (using \texttt{StandardScaler}), all fitted within
+each training fold to prevent data leakage. Hyperparameters were
+tuned via grid search: for SVM, $C \in \{0.1, 1, 10, 100\}$,
+$\text{kernel} \in \{\text{linear}, \text{rbf}, \text{poly}\}$; for
+logistic regression, $C \in \{0.01, 0.1, 1, 10, 100\}$,
+$\text{solver} \in \{\text{lbfgs}, \text{newton-cg}, \text{sag},
+\text{saga}\}$; and for random forest, $n_{\text{estimators}} \in
+\{100, 300, 500\}$, $\text{max\_depth} \in \{\text{None}, 5, 10, 20\}$.
 
 \section{Code availability}\label{sec:code}
 
@@ -809,38 +883,51 @@ the VesSkel repository under \texttt{tests/}.
 
 \section{Supplementary figures}\label{appendix:figures}
 
-% Supplementary figures that provide additional results but do not fit
-% into the narrative of the main text can be put here. All
-% supplementary figures should be referenced from the main text and
-% should be listed here in the order of these references. Delete this
-% section if not needed.
-%
-% \begin{figure}[htb]
-%   \centering
-%   \includegraphics[width=0.5\linewidth]{example-image-b}
-%   \caption{Caption of \Cref{fig:supp-fig}.}
-%   \label{fig:supp-fig}
-% \end{figure}
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/correlation_heatmap.png}
+\caption{Spearman correlation heatmap of the 29 per-image summary
+features across the HRF dataset.}
+\label{fig:correlation-heatmap}
+\end{figure}
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=\linewidth]{figures/individual_confusion_matrices.png}
+\caption{Confusion matrices for the three individual classifiers
+  (random forest, SVM, logistic regression) on the HRF phenotype
+prediction task, obtained via stratified 5-fold cross-validation.}
+\label{fig:confusion-matrices}
+\end{figure}
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/svm_k_sweep.png}
+\caption{SVM classification accuracy as a function of the number of
+selected features $k$ (ANOVA F-statistic).} \label{fig:svm-k-sweep}
+\end{figure}
 
 \section{Supplementary tables}\label{appendic:tables}
 
+\input{../../tables/top_anova_feature_means.tex}
+
 \begin{landscape}
-  \footnotesize\setlength{\tabcolsep}{3pt}
-  \begin{longtable}{p{4.5cm} p{8cm} *{7}{>{\centering\arraybackslash}p{1.3cm}}}
-    \caption{Feature comparison of selected analysis tools.}
-    \label{tab:feature-comparison}\\
-    \toprule
-    \featcompheader \\
-    \midrule
-    \endfirsthead
-    \toprule
-    \featcompheader \\
-    \midrule
-    \endhead
-    \bottomrule
-    \endfoot
-    \input"| python3 gen_feature_csv.py"
-  \end{longtable}
+\footnotesize\setlength{\tabcolsep}{3pt}
+\begin{longtable}{p{4.5cm} p{8cm} *{7}{>{\centering\arraybackslash}p{1.3cm}}}
+  \caption{Feature comparison of selected analysis tools.}
+  \label{tab:feature-comparison}\\
+  \toprule
+  \featcompheader \\
+  \midrule
+  \endfirsthead
+  \toprule
+  \featcompheader \\
+  \midrule
+  \endhead
+  \bottomrule
+  \endfoot
+  \input"| python3 gen_feature_csv.py"
+\end{longtable}
 \end{landscape}
 
 \clearpage
@@ -858,101 +945,101 @@ DeepL, Google Translate, Perplexity, Elicit, Explainpaper, and
 ResearchRabbit. Example sentences:
 
 \begin{itemize}
-  \item Task: Review and editing of the text: \textit{``I used
-      Grammarly for proofreading, revising the grammar of the text in
-      \Cref{sec:introduction,sec:discussion}, and for rewording
-    convoluted sentences throughout this work.''}
-  \item Task: Structuring and planning the text: \textit{``I used
-      Claude to suggest how my background description in
-    \Cref{sec:introduction} should be structured and what should be included.''}
-  \item Task: Coding: \textit{``I used the Microsoft Copilot
-      extension in my IDE for code completion and for generating the
-    code for the JavaScript frontend.''}
+\item Task: Review and editing of the text: \textit{``I used
+    Grammarly for proofreading, revising the grammar of the text in
+    \Cref{sec:introduction,sec:discussion}, and for rewording
+  convoluted sentences throughout this work.''}
+\item Task: Structuring and planning the text: \textit{``I used
+    Claude to suggest how my background description in
+  \Cref{sec:introduction} should be structured and what should be included.''}
+\item Task: Coding: \textit{``I used the Microsoft Copilot
+    extension in my IDE for code completion and for generating the
+  code for the JavaScript frontend.''}
 \end{itemize}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Brainstorming and concept development}
-  Tools used for the development of ideas, obtaining research goals,
-  objectives, designing the research, and identifying and defining
-  relevant concepts.
+Tools used for the development of ideas, obtaining research goals,
+objectives, designing the research, and identifying and defining
+relevant concepts.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Literature review and analysis}
-  Tools used for identifying relevant literature, reviewing
-  potentially relevant literature,  and creating summaries.
+Tools used for identifying relevant literature, reviewing
+potentially relevant literature,  and creating summaries.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Methodology}
-  Tools used for identifying a suitable methodology and developing
-  and adapting the methodology to the research question(s).
+Tools used for identifying a suitable methodology and developing
+and adapting the methodology to the research question(s).
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Coding}
-  Tools used for writing and documenting code, algorithms, and
-  software, testing and debugging, and understanding existing code.
+Tools used for writing and documenting code, algorithms, and
+software, testing and debugging, and understanding existing code.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Data collection, generation, and analysis}
-  Tools used for collecting, generating, and processing primary or
-  secondary data. Tools for qualitative or quantitative data analysis.
+Tools used for collecting, generating, and processing primary or
+secondary data. Tools for qualitative or quantitative data analysis.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Interpretation and validation}
-  Tools used for interpreting results, deriving implications, and
-  assessing general replicability and reproducibility of the results
-  or other research findings.
+Tools used for interpreting results, deriving implications, and
+assessing general replicability and reproducibility of the results
+or other research findings.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Structuring and planning the text}
-  Tools used for generating the outline of the work and/or the
-  outline of specific sections.
+Tools used for generating the outline of the work and/or the
+outline of specific sections.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Text generation}
-  Tools used for generating text on various topics in different
-  sections of the work, including titles and abstracts.
+Tools used for generating text on various topics in different
+sections of the work, including titles and abstracts.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Translating text}
-  Tools used for translating text written by the author or by others.
+Tools used for translating text written by the author or by others.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Review and editing of the text}
-  Tools used for critically reviewing the written text, obtaining
-  feedback, revising the content, structure, or grammar of the text,
-  proofreading, rewording or paraphrasing the given text, and
-  shortening or expanding the text.
+Tools used for critically reviewing the written text, obtaining
+feedback, revising the content, structure, or grammar of the text,
+proofreading, rewording or paraphrasing the given text, and
+shortening or expanding the text.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Bibliography management}
-  Tools used to create or format the reference list.
+Tools used to create or format the reference list.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Other activities}
-  Tools used for anything not covered by the given tasks.
+Tools used for anything not covered by the given tasks.
 \end{answerbox}
 
 \clearpage
