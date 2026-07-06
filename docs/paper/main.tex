@@ -773,19 +773,19 @@ and all elementary cycles $\mathcal{C}$ are enumerated using
 \texttt{networkx.\\cycle\_basis}. For a cycle $c = (v_1, \dots, v_n)
 \in \mathcal{C}$ with $v_{n+1} = v_1$, the perimeter is
 \[
-P(c) = \sum_{i=1}^{n} \lVert \operatorname{pos}(v_{i+1}) -
-\operatorname{pos}(v_i) \rVert_2
+  P(c) = \sum_{i=1}^{n} \lVert \operatorname{pos}(v_{i+1}) -
+  \operatorname{pos}(v_i) \rVert_2
 \]
 and the local vessel diameter is estimated as
 \[
-D(c) = \frac{2}{n} \sum_{i=1}^{n}
-\operatorname{EDT}(\operatorname{pos}(v_i)),
+  D(c) = \frac{2}{n} \sum_{i=1}^{n}
+  \operatorname{EDT}(\operatorname{pos}(v_i)),
 \]
 where $\operatorname{pos}(v)$ gives the pixel coordinates of node $v$
 and $\operatorname{EDT}$ is the Euclidean distance transform of the
 vessel mask. A cycle is classified as an artifact if
 \[
-P(c) < \tau \cdot D(c)
+  P(c) < \tau \cdot D(c)
 \]
 with a default threshold of $\tau = 2.5$. Each such cycle --- or
 connected group of overlapping cycles --- is collapsed to a single
@@ -839,7 +839,7 @@ of this fit quantifies the quality of the power-law approximation.
 The hyphal growth unit (HGU) is computed as the ratio of total vessel
 length to endpoint count,
 \[
-\mathrm{HGU} = \frac{L_\text{total}}{N_\text{endpoints}},
+  \mathrm{HGU} = \frac{L_\text{total}}{N_\text{endpoints}},
 \]
 representing the average branch length per terminal segment. Vascular
 coverage is quantified by two additional features: \texttt{vessel\_area},
@@ -973,27 +973,27 @@ the VesSkel repository under \texttt{tests/}.
 \section{Supplementary figures}\label{appendix:figures}
 
 \begin{figure}[htb]
-\centering
-\includegraphics[width=0.85\linewidth]{figures/correlation_heatmap.png}
-\caption{Spearman correlation heatmap of the 29 per-image summary
-features across the HRF dataset.}
-\label{fig:correlation-heatmap}
+  \centering
+  \includegraphics[width=0.85\linewidth]{figures/correlation_heatmap.png}
+  \caption{Spearman correlation heatmap of the 29 per-image summary
+  features across the HRF dataset.}
+  \label{fig:correlation-heatmap}
 \end{figure}
 
 \begin{figure}[htb]
-\centering
-\includegraphics[width=\linewidth]{figures/individual_confusion_matrices.png}
-\caption{Confusion matrices for the three individual classifiers
-  (random forest, SVM, logistic regression) on the HRF phenotype
-prediction task, obtained via stratified 5-fold cross-validation.}
-\label{fig:confusion-matrices}
+  \centering
+  \includegraphics[width=\linewidth]{figures/individual_confusion_matrices.png}
+  \caption{Confusion matrices for the three individual classifiers
+    (random forest, SVM, logistic regression) on the HRF phenotype
+  prediction task, obtained via stratified 5-fold cross-validation.}
+  \label{fig:confusion-matrices}
 \end{figure}
 
 \begin{figure}[htb]
-\centering
-\includegraphics[width=0.85\linewidth]{figures/svm_k_sweep.png}
-\caption{SVM classification accuracy as a function of the number of
-selected features $k$ (ANOVA F-statistic).} \label{fig:svm-k-sweep}
+  \centering
+  \includegraphics[width=0.85\linewidth]{figures/svm_k_sweep.png}
+  \caption{SVM classification accuracy as a function of the number of
+  selected features $k$ (ANOVA F-statistic).} \label{fig:svm-k-sweep}
 \end{figure}
 
 \section{Supplementary tables}\label{appendic:tables}
@@ -1001,22 +1001,22 @@ selected features $k$ (ANOVA F-statistic).} \label{fig:svm-k-sweep}
 \input{../../tables/top_anova_feature_means.tex}
 
 \begin{landscape}
-\footnotesize\setlength{\tabcolsep}{3pt}
-\begin{longtable}{p{4.5cm} p{8cm} *{7}{>{\centering\arraybackslash}p{1.3cm}}}
-  \caption{Feature comparison of selected analysis tools.}
-  \label{tab:feature-comparison}\\
-  \toprule
-  \featcompheader \\
-  \midrule
-  \endfirsthead
-  \toprule
-  \featcompheader \\
-  \midrule
-  \endhead
-  \bottomrule
-  \endfoot
-  \input"| python3 gen_feature_csv.py"
-\end{longtable}
+  \footnotesize\setlength{\tabcolsep}{3pt}
+  \begin{longtable}{p{4.5cm} p{8cm} *{7}{>{\centering\arraybackslash}p{1.3cm}}}
+    \caption{Feature comparison of selected analysis tools.}
+    \label{tab:feature-comparison}\\
+    \toprule
+    \featcompheader \\
+    \midrule
+    \endfirsthead
+    \toprule
+    \featcompheader \\
+    \midrule
+    \endhead
+    \bottomrule
+    \endfoot
+    \input"| python3 gen_feature_csv.py"
+  \end{longtable}
 \end{landscape}
 
 \clearpage
@@ -1034,101 +1034,101 @@ DeepL, Google Translate, Perplexity, Elicit, Explainpaper, and
 ResearchRabbit. Example sentences:
 
 \begin{itemize}
-\item Task: Review and editing of the text: \textit{``I used
-    Grammarly for proofreading, revising the grammar of the text in
-    \Cref{sec:introduction,sec:discussion}, and for rewording
-  convoluted sentences throughout this work.''}
-\item Task: Structuring and planning the text: \textit{``I used
-    Claude to suggest how my background description in
-  \Cref{sec:introduction} should be structured and what should be included.''}
-\item Task: Coding: \textit{``I used the Microsoft Copilot
-    extension in my IDE for code completion and for generating the
-  code for the JavaScript frontend.''}
+  \item Task: Review and editing of the text: \textit{``I used
+      Grammarly for proofreading, revising the grammar of the text in
+      \Cref{sec:introduction,sec:discussion}, and for rewording
+    convoluted sentences throughout this work.''}
+  \item Task: Structuring and planning the text: \textit{``I used
+      Claude to suggest how my background description in
+    \Cref{sec:introduction} should be structured and what should be included.''}
+  \item Task: Coding: \textit{``I used the Microsoft Copilot
+      extension in my IDE for code completion and for generating the
+    code for the JavaScript frontend.''}
 \end{itemize}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Brainstorming and concept development}
-Tools used for the development of ideas, obtaining research goals,
-objectives, designing the research, and identifying and defining
-relevant concepts.
+  Tools used for the development of ideas, obtaining research goals,
+  objectives, designing the research, and identifying and defining
+  relevant concepts.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Literature review and analysis}
-Tools used for identifying relevant literature, reviewing
-potentially relevant literature,  and creating summaries.
+  Tools used for identifying relevant literature, reviewing
+  potentially relevant literature,  and creating summaries.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Methodology}
-Tools used for identifying a suitable methodology and developing
-and adapting the methodology to the research question(s).
+  Tools used for identifying a suitable methodology and developing
+  and adapting the methodology to the research question(s).
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Coding}
-Tools used for writing and documenting code, algorithms, and
-software, testing and debugging, and understanding existing code.
+  Tools used for writing and documenting code, algorithms, and
+  software, testing and debugging, and understanding existing code.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Data collection, generation, and analysis}
-Tools used for collecting, generating, and processing primary or
-secondary data. Tools for qualitative or quantitative data analysis.
+  Tools used for collecting, generating, and processing primary or
+  secondary data. Tools for qualitative or quantitative data analysis.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Interpretation and validation}
-Tools used for interpreting results, deriving implications, and
-assessing general replicability and reproducibility of the results
-or other research findings.
+  Tools used for interpreting results, deriving implications, and
+  assessing general replicability and reproducibility of the results
+  or other research findings.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Structuring and planning the text}
-Tools used for generating the outline of the work and/or the
-outline of specific sections.
+  Tools used for generating the outline of the work and/or the
+  outline of specific sections.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Text generation}
-Tools used for generating text on various topics in different
-sections of the work, including titles and abstracts.
+  Tools used for generating text on various topics in different
+  sections of the work, including titles and abstracts.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Translating text}
-Tools used for translating text written by the author or by others.
+  Tools used for translating text written by the author or by others.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Review and editing of the text}
-Tools used for critically reviewing the written text, obtaining
-feedback, revising the content, structure, or grammar of the text,
-proofreading, rewording or paraphrasing the given text, and
-shortening or expanding the text.
+  Tools used for critically reviewing the written text, obtaining
+  feedback, revising the content, structure, or grammar of the text,
+  proofreading, rewording or paraphrasing the given text, and
+  shortening or expanding the text.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Bibliography management}
-Tools used to create or format the reference list.
+  Tools used to create or format the reference list.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Other activities}
-Tools used for anything not covered by the given tasks.
+  Tools used for anything not covered by the given tasks.
 \end{answerbox}
 
 \clearpage
