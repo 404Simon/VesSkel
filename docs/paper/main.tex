@@ -610,20 +610,29 @@ fundus, no longitudinal data
 \subsection{Lee94 Thinning Algorithm}\label{sec:methods:lee}
 
 The Lee94 algorithm~\cite{lee94} produces topologically
-preserving skeletons by iteratively removing border pixels from a
-binary shape until only a one-voxel-wide medial axis remains. The
-algorithm proceeds in six directional sub-iterations (north, south,
-east, west, up, down). In each sub-iteration, a border pixel is
-removed only if it satisfies four criteria:
-(1)~it is a \textbf{border point} (at least one 4-/6-neighbor is
-background), (2)~it is \textbf{not an endpoint} (more than one
-foreground neighbor in the 8-/26-neighborhood),
+preserving skeletons by iteratively removing border voxels from a
+binary shape until only a one-voxel-wide medial axis remains. In each
+sub-iteration, a border voxel is removed only if it satisfies up to
+four criteria:
+(1)~it is a \textbf{border point} (at least one 4-neighbor in 2D or
+6-neighbor in 3D is background),
+(2)~it is \textbf{not an endpoint} (more than one foreground neighbor
+in the 8-neighborhood for 2D or 26-neighborhood for 3D),
 (3)~removing it leaves the \textbf{Euler characteristic} unchanged
 ($\Delta\chi = 0$, preventing hole or tunnel creation), and
 (4)~it is a \textbf{simple point} (the foreground neighbors form a
-single connected component, preventing disconnection). In 3D,
-conditions~(3) and~(4) are complementary; in 2D,
-condition~(3) is redundant (see below).
+single connected component, preventing disconnection).
+
+In 3D, all four criteria are active and the algorithm proceeds through
+six directional sub-iterations (north, south, east, west, up, down).
+Criteria~(3) and~(4) are complementary in 3D: the Euler invariant
+detects the creation or destruction of tunnels, while the simple-point
+condition prevents disconnection of the foreground object.
+
+In 2D, only four directions (north, south, east, west) are needed and
+condition~(3) is provably redundant (Section~\ref{sec:methods:impl:deviations}).
+The border-point and simple-point conditions together guarantee
+$\Delta\chi = 0$, allowing the Euler check to be omitted entirely.
 
 \subsection{Implementation Details}\label{sec:methods:impl}
 
@@ -647,16 +656,96 @@ embedded in a 3D volume. This collapses the 26-neighborhood to an
 8-neighborhood, reduces border detection from six directions to four,
 and halves memory usage.
 
-% TODO: add 3D details
+\paragraph{2D Implementation}\label{sec:methods:impl:2d}
 
-\paragraph{Numba-Parallelized Implementation}\label{sec:methods:impl:numba}
+Our 2D implementation replaces the flood-fill DFS used in the
+canonical simple-point check with a look-up table. The simple-point
+condition requires counting connected foreground components in the
+8-neighborhood of the candidate pixel. Since there are only $2^8 =
+256$ possible 8-neighborhood patterns, we precompute the simple-point
+status for every pattern at module-load time and store it in a
+256-entry boolean LUT. During thinning, each candidate's eight
+neighbors are packed into an 8-bit index and the verdict is read in
+O(1) time, replacing an O(k) DFS traversal per candidate. The LUT is
+compiled once by Numba's JIT and cached across all thinning calls.
 
-- actual implementation details
-- simple point ist 26-adjacency connectivity in 3D; 8-adjacency in 2D via LUT
+The thinning loop iterates over four directional passes (north,
+south, east, west) in each epoch. Each pass uses a two-phase
+strategy. In the first phase, candidate collection is parallelized
+over image rows using Numba's \texttt{prange}: each row independently
+tests every foreground pixel against the border, endpoint, and
+simple-point criteria and writes qualifying candidates into a per-row
+buffer. Per-row buffers are then merged into a flat candidate list.
+In the second phase, candidates are processed sequentially---a
+pixel's deletion affects the neighborhood of adjacent candidates,
+creating an inherent data dependency. Each candidate is re-checked
+against the simple-point LUT and deleted if still valid. The
+algorithm terminates when an entire pass over all four directions
+yields no removable pixels.
 
-\paragraph{Tests}\label{sec:methods:impl:tests}
+\paragraph{3D Implementation}\label{sec:methods:impl:3d}
 
-- Correctness verified against scikit-image Lee94 output -> tests erwähnen
+The 3D implementation started as a faithful port of scikit-image's
+Cython Lee94 to pure Python with Numba acceleration. All four Lee94
+criteria are active. The Euler invariant is computed using a
+precomputed 256-entry LUT~\cite{lee94}: for each of the eight octants
+of the $3\times3\times3$ neighborhood, seven neighbor occupancies are
+packed into a 7-bit index, and the $\Delta\chi$ contribution is read
+from the LUT. The simple-point condition is evaluated by counting
+connected components among the 26 exterior voxels using DFS on a
+precomputed 26-adjacency graph that records which pairs of neighbor
+positions are themselves 26-adjacent---avoiding redundant distance
+computations at runtime. The 3D border-point and endpoint checks
+follow the standard Lee94 definition.
+
+Candidate finding is parallelized over z-slices using a two-pass
+scheme: each slice independently counts border voxels in parallel, a
+prefix-sum computes write offsets, and each slice fills its
+contiguous segment of the candidate array. Candidate marking is then
+parallelized across all candidates with \texttt{prange}, where each
+thread loads the $3\times3\times3$ neighborhood and evaluates all
+four criteria. The removal phase is sequential.
+
+A further optimization reduces redundant simple-point re-checks
+during the removal phase. Since \texttt{mark\_removable\_candidates}
+already verified every candidate against the current volume state
+before any removals, the verdict remains valid for any candidate
+whose 26 neighbors have not been modified. An epoch
+counter---monotonically increasing per batch---is stamped onto every
+removed voxel. During sequential removal, each candidate scans its 26
+neighbors for a stamp matching the current epoch; if none is found,
+the precomputed verdict is reused and the DFS is skipped. This avoids
+O(26) DFS traversals for unaffected candidates and contributes to
+VesSkel being competitive with existing 3D implementations.
+
+\paragraph{Pipeline Integration}\label{sec:methods:impl:pipeline}
+
+The thinning implementations are exposed through a unified dispatcher
+that routes to the 2D or 3D variant based on the images
+dimensionality. The dispatcher is called by
+\texttt{analyze\_binary\_image}, a shared pipeline function used by
+both the napari plugin and the CLI. The pipeline stages (as displayed
+in \ref{fig:pipeline} are: (1)~optional preprocessing (morphological
+closing and hole filling), (2)~Lee94 thinning, (3)~optional junction
+cleanup, (4)~optional Euclidean distance transform for vessel radius
+estimation, (5)~graph construction via Skan, and (6)~feature
+extraction at three levels (summary, branch, node). All extraction
+options are configured through a \texttt{PipelineConfig} dataclass
+that serializes to and from JSON. The same configuration file drives
+both interactive napari sessions and reproducible CLI batch processing.
+
+\paragraph{Correctness Verification}\label{sec:methods:impl:tests}
+
+We verify that VesSkel produces correct skeletons at two levels. For
+both 2D and 3D, the output is pixel-identical to
+\texttt{skimage.morphology.skeletonize(method='lee')} on all 45 HRF
+images (2D) and the scikit-image brain volume~\cite{skimage} (3D).
+Both are enforced by automated tests. Beyond that, a regression test
+suite with saved baselines (skeletons and downstream extracted
+features) detects unintended changes. The full test suite comprises
+11 files containing 210 test cases covering thinning correctness,
+feature extraction, pipeline toggles, CLI behavior, napari layer
+generation, and config validation.
 
 \subsection{Cleanup Steps}\label{sec:methods:cleanup}
 
