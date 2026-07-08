@@ -24,6 +24,7 @@ from vesskel.config import (
     load_pipeline_config,
     save_pipeline_config,
 )
+from vesskel._batch import _save_skeleton, _save_radius, _write_csv
 from vesskel.pipeline import analyze_binary_image
 
 
@@ -35,6 +36,7 @@ class VesselAnalysisWidget(Container):
     def __init__(self, napari_viewer):
         super().__init__()
         self.viewer = napari_viewer
+        self._output_dir: Path | None = None
         self._setup_ui()
 
     def _setup_ui(self):
@@ -206,6 +208,17 @@ class VesselAnalysisWidget(Container):
         output_group.append(self.write_radius_widget)
 
         # ============================================================
+        # Output Directory
+        # ============================================================
+        outdir_group = Container()
+        outdir_group.label = "Output Directory"
+
+        self.select_outdir_btn = PushButton(text="Select Output Directory...")
+        self.select_outdir_btn.clicked.connect(self._on_select_output_dir)
+
+        outdir_group.append(self.select_outdir_btn)
+
+        # ============================================================
         # Configuration Management
         # ============================================================
         config_group = Container()
@@ -233,6 +246,7 @@ class VesselAnalysisWidget(Container):
         self.append(extraction_group)
         self.append(advanced_group)
         self.append(output_group)
+        self.append(outdir_group)
         self.append(config_group)
         self.append(self.analyze_btn)
 
@@ -330,6 +344,12 @@ class VesselAnalysisWidget(Container):
         except (ValueError, OSError) as e:
             show_error(f"Failed to save config: {e}")
 
+    def _on_select_output_dir(self) -> None:
+        dir_path = QFileDialog.getExistingDirectory(None, "Select Output Directory")
+        if dir_path:
+            self._output_dir = Path(dir_path)
+            self.select_outdir_btn.text = str(self._output_dir)
+
     def _on_analyze(self) -> None:
         """Execute analysis with current settings."""
         img = self.image_widget.value
@@ -379,5 +399,37 @@ class VesselAnalysisWidget(Container):
                     show_info(
                         f"Failed to add layer {meta.get('name', '<unnamed>')}: {e}"
                     )
+
+            # -- save results to disk if output directory is set ----------
+            if self._output_dir is not None:
+                out = self._output_dir / img.name
+                out.mkdir(parents=True, exist_ok=True)
+
+                o = pipeline_config.output
+                if o.write_skeleton_npy or o.write_skeleton_png:
+                    _save_skeleton(
+                        out / f"{img.name}_skeleton",
+                        result.skeleton,
+                        npy=o.write_skeleton_npy,
+                        png=o.write_skeleton_png,
+                    )
+
+                if o.write_radius and result.radius_matrix is not None:
+                    _save_radius(out / f"{img.name}_radius", result.radius_matrix)
+
+                if o.write_branch_csv and result.branch_records:
+                    _write_csv(out / f"{img.name}_branches.csv", result.branch_records)
+
+                if o.write_node_csv and result.node_records:
+                    _write_csv(out / f"{img.name}_nodes.csv", result.node_records)
+
+                if o.write_summary_csv and result.summary_features:
+                    _write_csv(
+                        out / f"{img.name}_summary.csv",
+                        [{"image": img.name, **result.summary_features}],
+                    )
+
+                show_info(f"Results saved to {self._output_dir / img.name}")
+
         except (ValueError, RuntimeError, OSError) as e:
             show_error(f"Analysis failed: {e}")
