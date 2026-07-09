@@ -28,12 +28,27 @@ Biomedical Engineering, Friedrich-Alexander-Universität Erlangen-Nürnberg}
 \maketitle
 
 \begin{abstract}
-  Write your abstract here. An abstract is a brief one-paragraph
-  summary that motivates your work, and provides a high-level
-  description of why it is relevant. Excellent guidelines can be
-  found here:
-  \url{https://www.nature.com/documents/nature-summary-paragraph.pdf}.
-  Your abstract should fit on the first page of this document.
+  Quantitative analysis of vascular morphology from biomedical images
+  provides clinically relevant biomarkers for diseases including
+  diabetic retinopathy and glaucoma. A common approach extracts these
+  biomarkers by skeletonizing binary vessel segmentations and deriving
+  graph-based features from the resulting centerline representation.
+  However, this workflow requires assembling heterogeneous tools that
+  differ in license, supported dimensionality, interface, and feature
+  scope --- a fragmented process that introduces reproducibility risks
+  and undermines quantitative rigor. To address this, we present
+  VesSkel, an MIT-licensed Python package that unifies skeletonization,
+  artifact removal, and phenotype feature extraction in a single
+  end-to-end pipeline.   VesSkel provides a Numba-parallelized Lee94
+  thinning implementation that is up to 5--9$\times$ faster in 2D
+  than existing alternatives while producing bit-identical output, a novel
+  junction-cleanup step that removes thinning-induced triangle
+  artifacts, and dual napari and CLI interfaces with fully serializable
+  JSON configuration for reproducible batch processing. On the
+  High-Resolution Fundus dataset, an SVM trained on VesSkel features
+  achieves 91.1\% accuracy in discriminating healthy, diabetic
+  retinopathy, and glaucoma subjects, confirming that its features
+  encode biologically relevant vascular phenotypes.
 \end{abstract}
 
 \clearpage
