@@ -289,19 +289,19 @@ reverted to preserve legitimate anatomical voids.
 \begin{figure}[htb]
   \centering
   \begin{subfigure}[b]{0.3\linewidth}
-    \includegraphics[width=\linewidth]{figures/hole_filling_input_mask.png}
+    \includegraphics[width=\linewidth]{../assets/hole_filling_input_mask.png}
     \caption{Input mask with hole}
     \label{fig:hole_filling:a}
   \end{subfigure}
   \hfill
   \begin{subfigure}[b]{0.3\linewidth}
-    \includegraphics[width=\linewidth]{figures/no_hole_filling_skeleton.png}
+    \includegraphics[width=\linewidth]{../assets/no_hole_filling_skeleton.png}
     \caption{Without hole filling}
     \label{fig:hole_filling:b}
   \end{subfigure}
   \hfill
   \begin{subfigure}[b]{0.3\linewidth}
-    \includegraphics[width=\linewidth]{figures/hole_filling_skeleton.png}
+    \includegraphics[width=\linewidth]{../assets/hole_filling_skeleton.png}
     \caption{With hole filling}
     \label{fig:hole_filling:c}
   \end{subfigure}
@@ -336,13 +336,13 @@ are collapsed to a single pixel at their geometric centroid
 \begin{figure}[htb]
   \centering
   \begin{subfigure}[b]{0.4\linewidth}
-    \includegraphics[width=\linewidth]{figures/no_junction_cleanup.png}
+    \includegraphics[width=\linewidth]{../assets/no_junction_cleanup.png}
     \caption{Before cleanup}
     \label{fig:junction_cleanup:a}
   \end{subfigure}
   \hfill
   \begin{subfigure}[b]{0.4\linewidth}
-    \includegraphics[width=\linewidth]{figures/junction_cleanup.png}
+    \includegraphics[width=\linewidth]{../assets/junction_cleanup.png}
     \caption{After cleanup}
     \label{fig:junction_cleanup:b}
   \end{subfigure}
@@ -469,7 +469,7 @@ fraction (F=39.1, $p \approx 10^{-10}$, \Cref{fig:anova}).
 
 \begin{figure}[htb]
   \centering
-  \includegraphics[width=0.85\linewidth]{figures/feature_difference_anova.png}
+  \includegraphics[width=0.85\linewidth]{figures/feature_difference_anova.pdf}
   \caption{Top ten features ranked by ANOVA F-statistic for
   differences among the three phenotypes.}
   \label{fig:anova}
@@ -509,7 +509,7 @@ stacking ensembles (both 84.4\%), and random forest (82.2\%)
 
 \begin{figure}[htb]
 \centering
-\includegraphics[width=0.85\linewidth]{figures/final_model_comparison.png}
+\includegraphics[width=0.7\linewidth]{figures/final_model_comparison.pdf}
 \caption{Classification performance (mean accuracy $\pm$~SD) across
 five models with stratified 5-fold cross-validation on the HRF dataset.}
 \label{fig:model-comparison}
@@ -958,7 +958,7 @@ the VesSkel repository under \texttt{tests/}.
 
 \begin{figure}[htb]
   \centering
-  \includegraphics[width=0.85\linewidth]{figures/correlation_heatmap.png}
+  \includegraphics[width=0.85\linewidth]{figures/correlation_heatmap.pdf}
   \caption{Spearman correlation heatmap of the 29 per-image summary
   features across the HRF dataset.}
   \label{fig:correlation-heatmap}
@@ -966,7 +966,7 @@ the VesSkel repository under \texttt{tests/}.
 
 \begin{figure}[htb]
   \centering
-  \includegraphics[width=\linewidth]{figures/individual_confusion_matrices.png}
+  \includegraphics[width=\linewidth]{figures/individual_confusion_matrices.pdf}
   \caption{Confusion matrices for the three individual classifiers
     (random forest, SVM, logistic regression) on the HRF phenotype
   prediction task, obtained via stratified 5-fold cross-validation.}
@@ -975,7 +975,7 @@ the VesSkel repository under \texttt{tests/}.
 
 \begin{figure}[htb]
   \centering
-  \includegraphics[width=0.85\linewidth]{figures/svm_k_sweep.png}
+  \includegraphics[width=0.85\linewidth]{figures/svm_k_sweep.pdf}
   \caption{SVM classification accuracy as a function of the number of
   selected features $k$ (ANOVA F-statistic).} \label{fig:svm-k-sweep}
 \end{figure}

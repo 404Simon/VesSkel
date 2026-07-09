@@ -210,3 +210,5 @@ __marimo__/
 
 # Downloaded benchmark data
 tests/lung_masks/
+
+*.pdf
