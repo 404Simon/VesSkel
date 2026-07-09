@@ -718,22 +718,6 @@ the precomputed verdict is reused and the DFS is skipped. This avoids
 O(26) DFS traversals for unaffected candidates and contributes to
 VesSkel being competitive with existing 3D implementations.
 
-\paragraph{Pipeline Integration}\label{sec:methods:impl:pipeline}
-
-The thinning implementations are exposed through a unified dispatcher
-that routes to the 2D or 3D variant based on the images
-dimensionality. The dispatcher is called by
-\texttt{analyze\_binary\_image}, a shared pipeline function used by
-both the napari plugin and the CLI. The pipeline stages (as displayed
-in \ref{fig:pipeline} are: (1)~optional preprocessing (morphological
-closing and hole filling), (2)~Lee94 thinning, (3)~optional junction
-cleanup, (4)~optional Euclidean distance transform for vessel radius
-estimation, (5)~graph construction via Skan, and (6)~feature
-extraction at three levels (summary, branch, node). All extraction
-options are configured through a \texttt{PipelineConfig} dataclass
-that serializes to and from JSON. The same configuration file drives
-both interactive napari sessions and reproducible CLI batch processing.
-
 \paragraph{Correctness Verification}\label{sec:methods:impl:tests}
 
 We verify that VesSkel produces correct skeletons at two levels. For
