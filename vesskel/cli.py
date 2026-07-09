@@ -116,7 +116,7 @@ if "_ARGCOMPLETE" in os.environ or (len(sys.argv) > 1 and sys.argv[1] == "comple
 
 
 _SUPPORTED_EXTENSIONS = frozenset(
-    {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".npy"}
+    {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".npy", ".mhd"}
 )
 
 

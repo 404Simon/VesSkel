@@ -6,6 +6,7 @@ import csv
 from pathlib import Path
 from typing import Iterable
 
+import itk
 import numpy as np
 from PIL import Image
 
@@ -14,8 +15,11 @@ from vesskel.pipeline import analyze_binary_image
 
 
 def _load_image(path: Path) -> np.ndarray:
-    if path.suffix.lower() == ".npy":
+    suffix = path.suffix.lower()
+    if suffix == ".npy":
         arr = np.load(path)
+    elif suffix == ".mhd":
+        arr = np.asarray(itk.imread(str(path)))
     else:
         with Image.open(path) as im:
             arr = np.asarray(im)

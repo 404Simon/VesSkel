@@ -40,6 +40,54 @@ class AnalysisResult:
     preprocessed_binary: np.ndarray | None = None
 
 
+def preprocess_binary(
+    binary: np.ndarray,
+    closing_iterations: int = 0,
+    fill_holes: bool = False,
+    max_hole_size: int = 0,
+) -> np.ndarray:
+    """Apply morphological preprocessing to a binary mask.
+
+    Parameters
+    ----------
+    binary : ndarray
+        Binary uint8 array (0/1).
+    closing_iterations : int
+        Number of binary closing iterations (0 = skip).
+    fill_holes : bool
+        Whether to fill enclosed background regions.
+    max_hole_size : int
+        Max hole size in voxels to fill (0 = unlimited).
+
+    Returns
+    -------
+    ndarray
+        Preprocessed binary array.
+    """
+    if closing_iterations > 0:
+        structure = ndi.generate_binary_structure(binary.ndim, 1)
+        binary = ndi.binary_closing(
+            binary, structure=structure, iterations=closing_iterations
+        ).astype(binary.dtype)
+
+    if fill_holes:
+        before_fill = binary.copy() if max_hole_size > 0 else None
+        binary = ndi.binary_fill_holes(binary).astype(binary.dtype)
+
+        if max_hole_size > 0 and before_fill is not None:
+            diff = binary.astype(np.int8) - before_fill.astype(np.int8)
+            filled = diff > 0
+            if filled.any():
+                labels, _ = ndi.label(filled)
+                sizes = np.bincount(labels.ravel())
+                big = sizes > max_hole_size
+                big[0] = False
+                revert = big[labels]
+                binary[revert] = 0
+
+    return binary
+
+
 def analyze_binary_image(
     image: np.ndarray,
     base_name: str,
@@ -60,28 +108,13 @@ def analyze_binary_image(
 
     # -- optional: morphological preprocessing -------------------------
     preprocessed_binary: np.ndarray | None = None
-    if config.extraction.closing_iterations > 0:
-        structure = ndi.generate_binary_structure(binary.ndim, 1)
-        binary = ndi.binary_closing(
-            binary, structure=structure, iterations=config.extraction.closing_iterations
-        ).astype(binary.dtype)
-
-    if config.extraction.fill_holes:
-        before_fill = binary.copy() if config.extraction.max_hole_size > 0 else None
-        binary = ndi.binary_fill_holes(binary).astype(binary.dtype)
-
-        if config.extraction.max_hole_size > 0 and before_fill is not None:
-            diff = binary.astype(np.int8) - before_fill.astype(np.int8)
-            filled = diff > 0
-            if filled.any():
-                labels, _ = ndi.label(filled)
-                sizes = np.bincount(labels.ravel())
-                big = sizes > config.extraction.max_hole_size
-                big[0] = False
-                revert = big[labels]
-                binary[revert] = 0
-
     if config.extraction.closing_iterations > 0 or config.extraction.fill_holes:
+        binary = preprocess_binary(
+            binary,
+            closing_iterations=config.extraction.closing_iterations,
+            fill_holes=config.extraction.fill_holes,
+            max_hole_size=config.extraction.max_hole_size,
+        )
         preprocessed_binary = binary
 
     skeleton = lee94_thin(binary)
