@@ -59,69 +59,6 @@
           and Disease.pdf:application/pdf},
 }
 
-@article{improved_turtosity,
-  title = {An improved tortuosity measurement method combining curvature-based,
-           breadth-first search and Euclidean distance for retinal image analysis
-           },
-  volume = {14},
-  rights = {https://creativecommons.org/licenses/by/4.0/},
-  issn = {2167-8359},
-  url = {https://peerj.com/articles/20561},
-  doi = {10.7717/peerj.20561},
-  abstract = {Retinal vascular tortuosity is a clinically relevant biomarker
-              linked to systemic and ocular diseases; however, its quantitative
-              assessment particularly the distinction between arteries and veins
-              remains underexplored in both healthy and pathological conditions.
-              This study investigates tortuosity behavior using three publicly
-              available retinal fundus image datasets: Digital Retinal Images for
-              Vessel Extraction ({DRIVE}), High-Resolution Fundus ({HRF}), and
-              Labelled Eye fundus Segmentation-Artery Vein ({LES}-{AV}). A
-              standardized analytical pipeline combining curvature-based metrics,
-              breadth-first search ({BFS}) and Euclidean distance was applied
-              following vessel segmentation, artery-vein separation,
-              skeletonization, and optic disc-based tracing. {BFS} algorithm was
-              utilized for vessel path tracing, chosen for its robustness and
-              suitability in navigating complex vascular structures with high
-              reproducibility. Five comparative analyses were performed: artery
-              vs . vein tortuosity; healthy vs . diseased eyes (glaucoma and
-              diabetic retinopathy); and cross-dataset comparisons under both
-              healthy and pathological conditions. Across all datasets, veins
-              consistently exhibited higher tortuosity than arteries in healthy
-              eyes, confirmed by large effect sizes (Cohen’s d), despite weak
-              correlation between the two vessel types. Diabetic retinopathy
-              cases showed an amplified artery-vein separation, suggesting
-              disease-induced vascular changes. Glaucomatous eyes exhibited mixed
-              patterns, with {HRF} artery-vein differences maintained and {LES}-{
-              AV} showing diminished separation, partly due to non-normal data
-              distribution. A key finding highlights the significant influence of
-              imaging characteristics especially field of view ({FOV}) on
-              tortuosity measurement. Datasets with a wider field of view, such
-              as {DRIVE} and {HRF} (45° {FOV}, optical disc ({OD}) positioned
-              nasally), captured more peripheral, tortuous vessels and reported
-              higher tortuosity values. In contrast, the {LES}-{AV} dataset with
-              a narrower 30° {FOV} and centered optic disc, resulted in lower
-              tortuosity measurements and weaker artery-vein differentiation.
-              These anatomical and technical differences emphasize the need to
-              handle {FOV} and orientation settings when designing or comparing
-              tortuosity-based diagnostic studies. In conclusion, retinal
-              vascular tortuosity appears to be a vessel-specific feature which
-              is robust and capable of capturing both pathological and variations
-              in dataset. The findings support its integration into automated
-              diagnostic frameworks and highlight the importance of standardizing
-              imaging parameters particularly {FOV} and anatomical orientation in
-              future retinal biomarker research.},
-  pages = {e20561},
-  journaltitle = {{PeerJ}},
-  author = {Amir Hamzah, Nur Asyiqin and Wan Zaki, Wan Mimi Diyana and Ali,
-            Aziah},
-  urldate = {2026-03-10},
-  date = {2026-01-06},
-  langid = {english},
-  file = {PDF:/home/simon/Zotero/storage/U4RUBZKS/Amir Hamzah et al. - 2026 - An
-          improved tortuosity measurement method combining curvature-based,
-          breadth-first search and Euclid.pdf:application/pdf},
-}
-
 @article{lee94,
   title = {Building Skeleton Models via 3-D Medial Surface Axis Thinning
            Algorithms},
@@ -499,4 +436,105 @@
           2018 - Scikit-learn Machine Learning in
           Python.pdf:application/pdf;Snapshot:/home/simon/Zotero/storage/RDFEQA5K/1201.html:text/html
           },
+}
+
+@inproceedings{networkx,
+  location = {Pasadena, California},
+  title = {Exploring Network Structure, Dynamics, and Function using {NetworkX}},
+  rights = {https://creativecommons.org/licenses/by/3.0/},
+  url = {https://doi.curvenote.com/10.25080/TCWV9851},
+  doi = {10.25080/TCWV9851},
+  abstract = {{NetworkX} is a Python language package for exploration and
+              analysis of networks and network algorithms. The core package
+              provides data structures for representing many types of networks,
+              or graphs, including simple graphs, directed graphs, and graphs
+              with parallel edges and self-loops. The nodes in {NetworkX} graphs
+              can be any (hashable) Python object and edges can contain arbitrary
+              data; this flexibility makes {NetworkX} ideal for representing
+              networks found in many different scientific fields. In addition to
+              the basic data structures many graph algorithms are implemented for
+              calculating network properties and structure measures: shortest
+              paths, betweenness centrality, clustering, and degree distribution
+              and many more. {NetworkX} can read and write various graph formats
+              for easy exchange with existing data, and provides generators for
+              many classic graphs and popular graph models, such as the
+              Erdos-Renyi, Small World, and Barabasi-Albert models. The
+              ease-of-use and flexibility of the Python programming language
+              together with connection to the {SciPy} tools make {NetworkX} a
+              powerful tool for scientific computations. We discuss some of our
+              recent work studying synchronization of coupled oscillators to
+              demonstrate how {NetworkX} enables research in the field of
+              computational networks.},
+  eventtitle = {Python in Science Conference},
+  pages = {11--15},
+  author = {Hagberg, Aric A. and Schult, Daniel A. and Swart, Pieter J.},
+  urldate = {2026-07-12},
+  date = {2008-06-28},
+  file = {Full Text:/home/simon/Zotero/storage/2IPV2MWF/Hagberg et al. - 2008 -
+          Exploring Network Structure, Dynamics, and Function using
+          NetworkX.pdf:application/pdf},
+}
+
+@article{scipy,
+  title = {{SciPy} 1.0: fundamental algorithms for scientific computing in
+           Python},
+  volume = {17},
+  issn = {1548-7091, 1548-7105},
+  url = {https://www.nature.com/articles/s41592-019-0686-2},
+  doi = {10.1038/s41592-019-0686-2},
+  shorttitle = {{SciPy} 1.0},
+  abstract = {Abstract {SciPy} is an open-source scientific computing library
+              for the Python programming language. Since its initial release in
+              2001, {SciPy} has become a de facto standard for leveraging
+              scientific algorithms in Python, with over 600 unique code
+              contributors, thousands of dependent packages, over 100,000
+              dependent repositories and millions of downloads per year. In this
+              work, we provide an overview of the capabilities and development
+              practices of {SciPy} 1.0 and highlight some recent technical
+              developments.},
+  pages = {261--272},
+  number = {3},
+  journaltitle = {Nature Methods},
+  shortjournal = {Nat Methods},
+  author = {Virtanen, Pauli and Gommers, Ralf and Oliphant, Travis E. and
+            Haberland, Matt and Reddy, Tyler and Cournapeau, David and Burovski,
+            Evgeni and Peterson, Pearu and Weckesser, Warren and Bright, Jonathan
+            and Van Der Walt, Stéfan J. and Brett, Matthew and Wilson, Joshua and
+            Millman, K. Jarrod and Mayorov, Nikolay and Nelson, Andrew R. J. and
+            Jones, Eric and Kern, Robert and Larson, Eric and Carey, C J and
+            Polat, İlhan and Feng, Yu and Moore, Eric W. and VanderPlas, Jake and
+            Laxalde, Denis and Perktold, Josef and Cimrman, Robert and Henriksen,
+            Ian and Quintero, E. A. and Harris, Charles R. and Archibald, Anne M.
+            and Ribeiro, Antônio H. and Pedregosa, Fabian and Van Mulbregt, Paul
+            and {SciPy 1.0 Contributors} and Vijaykumar, Aditya and Bardelli,
+            Alessandro Pietro and Rothberg, Alex and Hilboll, Andreas and
+            Kloeckner, Andreas and Scopatz, Anthony and Lee, Antony and Rokem,
+            Ariel and Woods, C. Nathan and Fulton, Chad and Masson, Charles and
+            Häggström, Christian and Fitzgerald, Clark and Nicholson, David A.
+            and Hagen, David R. and Pasechnik, Dmitrii V. and Olivetti, Emanuele
+            and Martin, Eric and Wieser, Eric and Silva, Fabrice and Lenders,
+            Felix and Wilhelm, Florian and Young, G. and Price, Gavin A. and
+            Ingold, Gert-Ludwig and Allen, Gregory E. and Lee, Gregory R. and
+            Audren, Hervé and Probst, Irvin and Dietrich, Jörg P. and Silterra,
+            Jacob and Webber, James T and Slavič, Janko and Nothman, Joel and
+            Buchner, Johannes and Kulick, Johannes and Schönberger, Johannes L.
+            and De Miranda Cardoso, José Vinícius and Reimer, Joscha and
+            Harrington, Joseph and Rodríguez, Juan Luis Cano and Nunez-Iglesias,
+            Juan and Kuczynski, Justin and Tritz, Kevin and Thoma, Martin and
+            Newville, Matthew and Kümmerer, Matthias and Bolingbroke, Maximilian
+            and Tartre, Michael and Pak, Mikhail and Smith, Nathaniel J. and
+            Nowaczyk, Nikolai and Shebanov, Nikolay and Pavlyk, Oleksandr and
+            Brodtkorb, Per A. and Lee, Perry and McGibbon, Robert T. and
+            Feldbauer, Roman and Lewis, Sam and Tygier, Sam and Sievert, Scott
+            and Vigna, Sebastiano and Peterson, Stefan and More, Surhud and
+            Pudlik, Tadeusz and Oshima, Takuya and Pingel, Thomas J. and
+            Robitaille, Thomas P. and Spura, Thomas and Jones, Thouis R. and Cera
+            , Tim and Leslie, Tim and Zito, Tiziano and Krauss, Tom and Upadhyay,
+            Utkarsh and Halchenko, Yaroslav O. and Vázquez-Baeza, Yoshiki},
+  urldate = {2026-07-12},
+  date = {2020-03-02},
+  langid = {english},
+  file = {Full Text PDF:/home/simon/Zotero/storage/SMP5RXQ7/Virtanen et al. -
+          2020 - SciPy 1.0 fundamental algorithms for scientific computing in
+          Python.pdf:application/pdf},
 }

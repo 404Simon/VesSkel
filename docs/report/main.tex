@@ -30,25 +30,26 @@ Biomedical Engineering, Friedrich-Alexander-Universität Erlangen-Nürnberg}
 \begin{abstract}
   Quantitative analysis of vascular morphology from biomedical images
   provides clinically relevant biomarkers for diseases including
-  diabetic retinopathy and glaucoma. A common approach extracts these
-  biomarkers by skeletonizing binary vessel segmentations and deriving
-  graph-based features from the resulting centerline representation.
-  However, this workflow requires assembling heterogeneous tools that
-  differ in license, supported dimensionality, interface, and feature
-  scope --- a fragmented process that introduces reproducibility risks
-  and undermines quantitative rigor. To address this, we present
-  VesSkel, an MIT-licensed Python package that unifies skeletonization,
+  diabetic retinopathy and glaucoma.   A common
+  approach~\cite{skel_survey} extracts these biomarkers by
+  skeletonizing binary vessel segmentations and deriving graph-based
+  features from the resulting centerline representation. However,
+  this workflow requires assembling heterogeneous tools that differ
+  in license, supported dimensionality, interface, and feature scope
+  --- a fragmented process that introduces reproducibility risks and
+  undermines quantitative rigor. To address this, we present VesSkel,
+  an MIT-licensed Python package that unifies skeletonization,
   artifact removal, and phenotype feature extraction in a single
   end-to-end pipeline.   VesSkel provides a Numba-parallelized Lee94
   thinning implementation that is up to 5--9$\times$ faster in 2D
-  than existing alternatives while producing bit-identical output, a novel
-  junction-cleanup step that removes thinning-induced triangle
-  artifacts, and dual napari and CLI interfaces with fully serializable
-  JSON configuration for reproducible batch processing. On the
-  High-Resolution Fundus dataset, an SVM trained on VesSkel features
-  achieves 91.1\% accuracy in discriminating healthy, diabetic
-  retinopathy, and glaucoma subjects, confirming that its features
-  encode biologically relevant vascular phenotypes.
+  than existing alternatives while producing bit-identical output, a
+  novel junction-cleanup step that removes thinning-induced triangle
+  artifacts, and dual napari and CLI interfaces with fully
+  serializable JSON configuration for reproducible batch processing.
+  On the High-Resolution Fundus dataset, an SVM trained on VesSkel
+  features achieves 91.1\% accuracy in discriminating healthy,
+  diabetic retinopathy, and glaucoma subjects, confirming that its
+  features encode biologically relevant vascular phenotypes.
 \end{abstract}
 
 \clearpage
@@ -59,20 +60,30 @@ Biomedical Engineering, Friedrich-Alexander-Universität Erlangen-Nürnberg}
 
 \section{Introduction}\label{sec:introduction}
 
-The retina is the only organ where the microvasculature can be imaged
-non-invasively using fundus photography~\cite{HRF}. Quantitative
-analysis of retinal vessel morphology provides clinically relevant
-biomarkers for systemic and ocular diseases such as diabetic
-retinopathy and glaucoma~\cite{improved_turtosity}. To extract
-these biomarkers from binary vessel segmentations, a common approach
-is to skeletonize the vessel mask and then derive graph-based
-features from the resulting one-pixel-wide centerline representation.
+Quantitative analysis of vascular morphology from biomedical images
+provides clinically relevant biomarkers for a wide range of
+diseases~\cite{skel_survey}. Regardless of the imaging
+modality or anatomical site -- whether in retinal fundus photography,
+CT angiography of the lungs, or microscopy of tissue sections -- a
+common approach~\cite{skel_survey} is to skeletonize the binary
+vessel segmentation and then derive graph-based features from the
+resulting one-pixel-wide centerline representation.
 
 Several software tools have been developed for this task, including
 REAVER~\cite{REAVER}, VesselVio~\cite{VesselVio},
 VesselExpress~\cite{VesselExpress}, TWOMBLI~\cite{TWOMBLI},
 VesSAP~\cite{VesSAP}, and Skan~\cite{Skan<3}. These tools differ
 substantially as can be seen in Table~\ref{tab:tools-general}.
+
+Despite their individual strengths, no existing tool
+simultaneously offers (i)~a permissive (MIT) license, (ii)~support
+for both 2D and 3D binary masks, (iii)~an interactive graphical
+interface alongside a batch-processing CLI, and (iv)~a comprehensive
+feature set that includes fractal dimension, per-segment radius
+statistics, and automatic cleanup of skeletonization artifacts. This
+fragmentation forces researchers to maintain heterogeneous,
+multi-tool pipelines that hinder reproducibility and increase the
+barrier to entry for quantitative vessel analysis.
 
 \begin{table}[htb]
   \centering
@@ -105,57 +116,33 @@ substantially as can be seen in Table~\ref{tab:tools-general}.
   \end{tabularx}
 \end{table}
 
-Despite their individual strengths, no existing tool
-simultaneously offers (i)~a permissive (MIT) license, (ii)~support
-for both 2D and 3D binary masks, (iii)~an interactive graphical
-interface alongside a batch-processing CLI, and (iv)~a comprehensive
-feature set that includes fractal dimension, per-segment radius
-statistics, and automatic cleanup of skeletonization artifacts. This
-fragmentation forces researchers to maintain heterogeneous,
-multi-tool pipelines that hinder reproducibility and increase the
-barrier to entry for quantitative vessel analysis.
-
 We present VesSkel, an MIT-licensed Python package for vessel
 skeletonization and graph-based phenotype analysis. VesSkel
 implements the Lee94 thinning algorithm~\cite{lee94} with Numba-based
 parallelization, supporting both 2D and 3D binary masks. The output
 is verified to be pixel-identical to scikit-image's Lee94
-implementation. In 2D benchmarks on the 45-image HRF dataset, VesSkel
-achieves a mean thinning time of 0.084~s per image, outperforming
-scikit-image's Lee (0.438~s, 5.2$\times$ slower) and VesselVio's Lee
-(0.796~s, 9.5$\times$ slower). In 3D, VesSkel (0.730~s) is
-competitive with scikit-image (1.024~s) and VesselVio (0.804~s).
-Beyond thinning, VesSkel provides an end-to-end pipeline: optional
-preprocessing (morphological closing and hole-filling), Lee94
-skeletonization, a novel junction-cleanup step that removes
+implementation. In both 2D and 3D benchmarks
+(Section~\ref{sec:results:performance}), VesSkel is consistently
+faster than scikit-image and VesselVio while producing correct
+skeletons. Beyond thinning, VesSkel provides an end-to-end pipeline:
+optional preprocessing (morphological closing and hole-filling),
+Lee94 skeletonization, a novel junction-cleanup step that removes
 thinning-induced triangle artifacts on the skeleton graph, graph
 construction using Skan~\cite{Skan<3}, and extraction of per-image,
-per-branch, and per-node features.
-
-VesSkel computes 29 summary features covering vessel topology (node
-count, edge count, bifurcations, connected components), morphology
-(segment lengths, tortuosity, radii, fractal dimension, hyphal growth
-unit), and density (vessel area fraction). Per-branch and per-node
-features provide additional granularity for localized analyses. The
-entire pipeline is accessible through two complementary interfaces: a
-napari plugin for interactive parameter tuning and visual feedback,
-and a command-line interface for reproducible batch processing. All
-extraction and output settings are serializable to a JSON configuration
-file, enabling full experiment reproducibility.
+per-branch, and per-node features. The pipeline is accessible through
+two complementary interfaces: a napari plugin for interactive
+parameter tuning and a command-line interface for reproducible batch
+processing with JSON-configurable settings.
 
 We demonstrate VesSkel on the High-Resolution Fundus (HRF)
 dataset~\cite{HRF}, which comprises 45 fundus images with manual
 vessel segmentations from three clinical groups: 15 healthy subjects,
 15 patients with diabetic retinopathy, and 15 patients with glaucoma.
-From each image, we extracted the full set of vessel phenotype
-features and evaluated their discriminative power using analysis of
-variance (ANOVA) and multi-class classification. Support vector
-machine classification with stratified 5-fold cross-validation
-achieves 91.1\% accuracy (linear kernel, $C=0.1$, top-10 features
-selected by ANOVA F-statistic), outperforming logistic regression
-(88.9\%) and random forest (82.2\%). These results confirm that the
-features captured by VesSkel encode biologically relevant differences
-in retinal vasculature.
+From each image, we extracted vessel phenotype features and evaluated
+their discriminative power achieving accurate discrimination between
+the three groups (Section~\ref{sec:results:phenodiff}). These results
+confirm that VesSkel captures biologically relevant differences in
+vascular morphology.
 
 In summary, our main contributions are: (1)~a Numba-parallelized
 Lee94 thinning implementation for 2D and 3D data, validated for
@@ -498,7 +485,8 @@ metrics (mean radius $3.86 \pm 0.19$~px; vessel area fraction $0.069
 \pm 0.006$), and diabetic retinopathy subjects occupy an intermediate
 position with respect to the vessel radius. This gradient mirrors the
 clinical expectation that both conditions induce vascular remodeling
-through distinct pathological mechanisms. The full set of group-wise
+through distinct pathological
+mechanisms~\cite{popovic_regional_2019}. The full set of group-wise
 means for the top ten features is reported in
 \Cref{tab:top-anova-feature-means}.
 
@@ -633,7 +621,8 @@ four criteria:
 6-neighbor in 3D is background),
 (2)~it is \textbf{not an endpoint} (more than one foreground neighbor
 in the 8-neighborhood for 2D or 26-neighborhood for 3D),
-(3)~removing it leaves the \textbf{Euler characteristic} unchanged
+(3)~removing it leaves the \textbf{Euler
+characteristic}~\cite{lee_winding_1991} unchanged
 ($\Delta\chi = 0$, preventing hole or tunnel creation), and
 (4)~it is a \textbf{simple point} (the foreground neighbors form a
 single connected component, preventing disconnection).
@@ -753,7 +742,7 @@ introduced during segmentation that would produce circular skeleton
 artifacts during thinning (Section~\ref{sec:results:cleanup}).
 VesSkel addresses these through optional preprocessing operations
 applied before skeletonization. Hole filling
-(\texttt{scipy.ndimage.binary\_fill\_holes}) fills all enclosed
+(\texttt{scipy.ndimage.binary\_fill\_holes})~\cite{scipy} fills all enclosed
 background regions in the mask. To preserve legitimate anatomical
 voids, the \texttt{max\_hole\_size} parameter reverts filled holes
 whose area exceeds a configurable threshold. VesSkel also offers
@@ -769,22 +758,23 @@ preprocessing. VesSkel removes these by analyzing the skeleton graph
 after thinning. The skeleton is converted to a NetworkX graph $G =
 (V, E)$ via Skan's \texttt{skeleton\_to\_nx} function~\cite{Skan<3},
 and all elementary cycles $\mathcal{C}$ are enumerated using
-\texttt{networkx.\\cycle\_basis}. For a cycle $c = (v_1, \dots, v_n)
+\texttt{networkx.\\cycle\_basis}~\cite{networkx}. For a cycle $c =
+(v_1, \dots, v_n)
 \in \mathcal{C}$ with $v_{n+1} = v_1$, the perimeter is
 \[
-  P(c) = \sum_{i=1}^{n} \lVert \operatorname{pos}(v_{i+1}) -
-  \operatorname{pos}(v_i) \rVert_2
+P(c) = \sum_{i=1}^{n} \lVert \operatorname{pos}(v_{i+1}) -
+\operatorname{pos}(v_i) \rVert_2
 \]
 and the local vessel diameter is estimated as
 \[
-  D(c) = \frac{2}{n} \sum_{i=1}^{n}
-  \operatorname{EDT}(\operatorname{pos}(v_i)),
+D(c) = \frac{2}{n} \sum_{i=1}^{n}
+\operatorname{EDT}(\operatorname{pos}(v_i)),
 \]
 where $\operatorname{pos}(v)$ gives the pixel coordinates of node $v$
 and $\operatorname{EDT}$ is the Euclidean distance transform of the
 vessel mask. A cycle is classified as an artifact if
 \[
-  P(c) < \tau \cdot D(c)
+P(c) < \tau \cdot D(c)
 \]
 with a default threshold of $\tau = 2.5$. Each such cycle --- or
 connected group of overlapping cycles --- is collapsed to a single
@@ -838,7 +828,7 @@ of this fit quantifies the quality of the power-law approximation.
 The hyphal growth unit (HGU) is computed as the ratio of total vessel
 length to endpoint count,
 \[
-  \mathrm{HGU} = \frac{L_\text{total}}{N_\text{endpoints}},
+\mathrm{HGU} = \frac{L_\text{total}}{N_\text{endpoints}},
 \]
 representing the average branch length per terminal segment. Vascular
 coverage is quantified by two additional features: \texttt{vessel\_area},
@@ -863,7 +853,8 @@ fundus images ($3504 \times 2336$~px) with corresponding manual
 vessel segmentation masks and field-of-view masks. The dataset
 includes three clinical groups of 15 images each: healthy subjects,
 patients with diabetic retinopathy, and patients with glaucoma. These
-conditions are known to alter retinal vessel morphology, providing a
+conditions are known to alter retinal vessel
+morphology~\cite{popovic_regional_2019}, providing a
 suitable test bed for phenotype analysis.
 
 For 3D benchmarking, we use a test volume from the VesSAP
@@ -972,27 +963,27 @@ the VesSkel repository under \texttt{tests/}.
 \section{Supplementary figures}\label{appendix:figures}
 
 \begin{figure}[htb]
-  \centering
-  \includegraphics[width=0.85\linewidth]{figures/correlation_heatmap.pdf}
-  \caption{Spearman correlation heatmap of the 29 per-image summary
-  features across the HRF dataset.}
-  \label{fig:correlation-heatmap}
+\centering
+\includegraphics[width=0.85\linewidth]{figures/correlation_heatmap.pdf}
+\caption{Spearman correlation heatmap of the 29 per-image summary
+features across the HRF dataset.}
+\label{fig:correlation-heatmap}
 \end{figure}
 
 \begin{figure}[htb]
-  \centering
-  \includegraphics[width=\linewidth]{figures/individual_confusion_matrices.pdf}
-  \caption{Confusion matrices for the three individual classifiers
-    (random forest, SVM, logistic regression) on the HRF phenotype
-  prediction task, obtained via stratified 5-fold cross-validation.}
-  \label{fig:confusion-matrices}
+\centering
+\includegraphics[width=\linewidth]{figures/individual_confusion_matrices.pdf}
+\caption{Confusion matrices for the three individual classifiers
+  (random forest, SVM, logistic regression) on the HRF phenotype
+prediction task, obtained via stratified 5-fold cross-validation.}
+\label{fig:confusion-matrices}
 \end{figure}
 
 \begin{figure}[htb]
-  \centering
-  \includegraphics[width=0.85\linewidth]{figures/svm_k_sweep.pdf}
-  \caption{SVM classification accuracy as a function of the number of
-  selected features $k$ (ANOVA F-statistic).} \label{fig:svm-k-sweep}
+\centering
+\includegraphics[width=0.85\linewidth]{figures/svm_k_sweep.pdf}
+\caption{SVM classification accuracy as a function of the number of
+selected features $k$ (ANOVA F-statistic).} \label{fig:svm-k-sweep}
 \end{figure}
 
 \section{Supplementary tables}\label{appendic:tables}
@@ -1000,22 +991,22 @@ the VesSkel repository under \texttt{tests/}.
 \input{../../tables/top_anova_feature_means.tex}
 
 \begin{landscape}
-  \footnotesize\setlength{\tabcolsep}{3pt}
-  \begin{longtable}{p{4.5cm} p{8cm} *{7}{>{\centering\arraybackslash}p{1.3cm}}}
-    \caption{Feature comparison of selected analysis tools.}
-    \label{tab:feature-comparison}\\
-    \toprule
-    \featcompheader \\
-    \midrule
-    \endfirsthead
-    \toprule
-    \featcompheader \\
-    \midrule
-    \endhead
-    \bottomrule
-    \endfoot
-    \input"| python3 gen_feature_csv.py"
-  \end{longtable}
+\footnotesize\setlength{\tabcolsep}{3pt}
+\begin{longtable}{p{4.5cm} p{8cm} *{7}{>{\centering\arraybackslash}p{1.3cm}}}
+  \caption{Feature comparison of selected analysis tools.}
+  \label{tab:feature-comparison}\\
+  \toprule
+  \featcompheader \\
+  \midrule
+  \endfirsthead
+  \toprule
+  \featcompheader \\
+  \midrule
+  \endhead
+  \bottomrule
+  \endfoot
+  \input"| python3 gen_feature_csv.py"
+\end{longtable}
 \end{landscape}
 
 \clearpage
@@ -1033,101 +1024,101 @@ DeepL, Google Translate, Perplexity, Elicit, Explainpaper, and
 ResearchRabbit. Example sentences:
 
 \begin{itemize}
-  \item Task: Review and editing of the text: \textit{``I used
-      Grammarly for proofreading, revising the grammar of the text in
-      \Cref{sec:introduction,sec:discussion}, and for rewording
-    convoluted sentences throughout this work.''}
-  \item Task: Structuring and planning the text: \textit{``I used
-      Claude to suggest how my background description in
-    \Cref{sec:introduction} should be structured and what should be included.''}
-  \item Task: Coding: \textit{``I used the Microsoft Copilot
-      extension in my IDE for code completion and for generating the
-    code for the JavaScript frontend.''}
+\item Task: Review and editing of the text: \textit{``I used
+    Grammarly for proofreading, revising the grammar of the text in
+    \Cref{sec:introduction,sec:discussion}, and for rewording
+  convoluted sentences throughout this work.''}
+\item Task: Structuring and planning the text: \textit{``I used
+    Claude to suggest how my background description in
+  \Cref{sec:introduction} should be structured and what should be included.''}
+\item Task: Coding: \textit{``I used the Microsoft Copilot
+    extension in my IDE for code completion and for generating the
+  code for the JavaScript frontend.''}
 \end{itemize}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Brainstorming and concept development}
-  Tools used for the development of ideas, obtaining research goals,
-  objectives, designing the research, and identifying and defining
-  relevant concepts.
+Tools used for the development of ideas, obtaining research goals,
+objectives, designing the research, and identifying and defining
+relevant concepts.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Literature review and analysis}
-  Tools used for identifying relevant literature, reviewing
-  potentially relevant literature,  and creating summaries.
+Tools used for identifying relevant literature, reviewing
+potentially relevant literature,  and creating summaries.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Methodology}
-  Tools used for identifying a suitable methodology and developing
-  and adapting the methodology to the research question(s).
+Tools used for identifying a suitable methodology and developing
+and adapting the methodology to the research question(s).
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Coding}
-  Tools used for writing and documenting code, algorithms, and
-  software, testing and debugging, and understanding existing code.
+Tools used for writing and documenting code, algorithms, and
+software, testing and debugging, and understanding existing code.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Data collection, generation, and analysis}
-  Tools used for collecting, generating, and processing primary or
-  secondary data. Tools for qualitative or quantitative data analysis.
+Tools used for collecting, generating, and processing primary or
+secondary data. Tools for qualitative or quantitative data analysis.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Interpretation and validation}
-  Tools used for interpreting results, deriving implications, and
-  assessing general replicability and reproducibility of the results
-  or other research findings.
+Tools used for interpreting results, deriving implications, and
+assessing general replicability and reproducibility of the results
+or other research findings.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Structuring and planning the text}
-  Tools used for generating the outline of the work and/or the
-  outline of specific sections.
+Tools used for generating the outline of the work and/or the
+outline of specific sections.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Text generation}
-  Tools used for generating text on various topics in different
-  sections of the work, including titles and abstracts.
+Tools used for generating text on various topics in different
+sections of the work, including titles and abstracts.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Translating text}
-  Tools used for translating text written by the author or by others.
+Tools used for translating text written by the author or by others.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Review and editing of the text}
-  Tools used for critically reviewing the written text, obtaining
-  feedback, revising the content, structure, or grammar of the text,
-  proofreading, rewording or paraphrasing the given text, and
-  shortening or expanding the text.
+Tools used for critically reviewing the written text, obtaining
+feedback, revising the content, structure, or grammar of the text,
+proofreading, rewording or paraphrasing the given text, and
+shortening or expanding the text.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Bibliography management}
-  Tools used to create or format the reference list.
+Tools used to create or format the reference list.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Other activities}
-  Tools used for anything not covered by the given tasks.
+Tools used for anything not covered by the given tasks.
 \end{answerbox}
 
 \clearpage
