@@ -38,18 +38,21 @@ Biomedical Engineering, Friedrich-Alexander-Universität Erlangen-Nürnberg}
   in license, supported dimensionality, interface, and feature scope
   --- a fragmented process that introduces reproducibility risks and
   undermines quantitative rigor. To address this, we present VesSkel,
-  an MIT-licensed Python package that unifies skeletonization,
+  an open-source-licensed Python package that unifies skeletonization,
   artifact removal, and phenotype feature extraction in a single
   end-to-end pipeline.   VesSkel provides a Numba-parallelized Lee94
-  thinning implementation that is up to 5--9$\times$ faster in 2D
-  than existing alternatives while producing bit-identical output, a
-  novel junction-cleanup step that removes thinning-induced triangle
-  artifacts, and dual napari and CLI interfaces with fully
-  serializable JSON configuration for reproducible batch processing.
-  On the High-Resolution Fundus dataset, an SVM trained on VesSkel
-  features achieves 91.1\% accuracy in discriminating healthy,
-  diabetic retinopathy, and glaucoma subjects, confirming that its
-  features encode biologically relevant vascular phenotypes.
+  thinning implementation that is 5--9$\times$ faster in 2D
+  (0.084\,s/image, $3504\times2336$\,px) than existing alternatives
+  while producing bit-identical output, a novel junction-cleanup step
+  that removes thinning-induced triangle artifacts, and dual napari
+  and CLI interfaces with fully serializable JSON configuration for
+  reproducible batch processing.  From each image, VesSkel extracts
+  29 per-image features spanning topology, morphology, and density.
+  On the High-Resolution Fundus dataset, an SVM trained on
+  ANOVA-selected VesSkel features achieves 91.1\% accuracy in
+  discriminating healthy, diabetic retinopathy, and glaucoma subjects,
+  confirming that its features encode biologically relevant vascular
+  phenotypes.
 \end{abstract}
 
 \clearpage
@@ -251,8 +254,15 @@ procedure, graph construction, and experimental setup.
 
 \begin{figure}[htb]
   \centering
-  \includegraphics[width=0.9\linewidth]{figures/pipeline_overview.pdf}
-  \caption{VesSkel processing pipeline}
+  \includegraphics[width=1.0\linewidth]{figures/VesSkel_Pipeline_Advanced.png}
+  \caption{Overview of the VesSkel end-to-end processing pipeline.
+    Starting from a 2D/3D binary segmentation mask, the input undergoes
+    optional preprocessing (morphological closing and hole filling)
+    before skeletonization via the Lee94 thinning algorithm. After
+    graph assembly using Skan and an optional junction cleanup to
+    remove triangle artifacts, topological, morphological, and density
+    features are extracted at three granularity levels (image, node,
+  and branch) and exported as structured files.}
   \label{fig:pipeline}
 \end{figure}
 
@@ -337,13 +347,13 @@ are collapsed to a single pixel at their geometric centroid
 
 \begin{figure}[htb]
   \centering
-  \begin{subfigure}[b]{0.4\linewidth}
+  \begin{subfigure}[b]{0.3\linewidth}
     \includegraphics[width=\linewidth]{../assets/no_junction_cleanup.png}
     \caption{Before cleanup}
     \label{fig:junction_cleanup:a}
   \end{subfigure}
-  \hfill
-  \begin{subfigure}[b]{0.4\linewidth}
+  \hspace{2em}
+  \begin{subfigure}[b]{0.3\linewidth}
     \includegraphics[width=\linewidth]{../assets/junction_cleanup.png}
     \caption{After cleanup}
     \label{fig:junction_cleanup:b}
@@ -512,7 +522,7 @@ stacking ensembles (both 84.4\%), and random forest (82.2\%)
 
 \begin{figure}[htb]
 \centering
-\includegraphics[width=0.7\linewidth]{figures/final_model_comparison.pdf}
+\includegraphics[width=0.6\linewidth]{figures/final_model_comparison.pdf}
 \caption{Classification performance (mean accuracy $\pm$~SD) across
 five models with stratified 5-fold cross-validation on the HRF dataset.}
 \label{fig:model-comparison}
@@ -530,24 +540,30 @@ feature subset can reliably distinguish the three clinical groups.
 
 \section{Discussion}\label{sec:discussion}
 
-% The discussion typically starts with a summary of your work's most
-% important results. Then, you discuss limitations of your work and
-% potential follow-up. Finally, you end on a positive note and tell the
-% reader at a very high abstraction level how your work advanced the
-% field: What did we learn through your work? What do we know now that
-% was not known before? Which type of analyses can now be run now that
-% were not possible before?
-%
-% Typically, discussions are internally unstructured. But you may
-% deviate from this rule of thumb, e.\,g., by including separate
-% subsections on limitations and outlook.
+We presented VesSkel, a unified pipeline for skeletonization and
+phenotype feature extraction from binary vessel masks. On the HRF
+dataset, VesSkel features achieved 91.1\% accuracy in discriminating
+healthy, diabetic retinopathy, and glaucoma subjects, confirming
+biological relevance of the extracted features.
 
-- Summary of main findings: VesSkel enables fully reproducible,
-quantitative vessel phenotype analysis
-- Feature set captures biologically relevant differences between clinical groups
-- Limitations: small dataset (45 images), 2D-only validation on
-fundus, no longitudinal data
-- Potential follow-ups: wavefront -> 3d performance
+Mask-level preprocessing (hole filling) proved more effective than
+graph-level junction cleanup for removing skeletonization artifacts.
+Our proof of Euler invariant redundancy in 2D Lee94 thinning
+simplified the implementation and contributed to the measured
+speedups. The 3D Lee94 implementation, while competitive, leaves room
+for improvement: a wavefront-based parallel deletion scheme could
+reduce the sequential bottleneck in the removal phase.
+
+The main limitations are the small single-dataset evaluation (HRF, 45
+images), the lack of 3D phenotype validation, and the cross-sectional
+design that precludes assessment of longitudinal sensitivity. The
+junction cleanup collapses detected triangles to a single centroid
+pixel and reconnects all attached branches to that point, which can
+distort topology when branches have different calibers. Reconnecting
+to the branch with the highest radius instead of the centroid may
+preserve vessel hierarchy better. Future work should address the
+remaining limitations through multi-site validation, 3D extension,
+improved artifact detection, and longitudinal data.
 
 \section{Methods}\label{sec:methods}
 
