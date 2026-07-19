@@ -2368,6 +2368,19 @@ wheels = [
 ]
 
 [[package]]
+name = "nibabel"
+version = "5.4.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "packaging" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a3/01/3d2cc510c616bc8e27be17a063070d9126f69407961594a9ae734ea51121/nibabel-5.4.2.tar.gz", hash = "sha256:d5f4b9076a13178ae7f7acf18c8dbd503ee1c4d5c0c23b85df7be87efcbb49da", size = 4663132, upload-time = "2026-03-11T13:31:52.42Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3b/d7/601b6396b33536811668935faa790112266c70661be94555999be431f86f/nibabel-5.4.2-py3-none-any.whl", hash = "sha256:553482c5f1e1034fc312edf6fb7f32236c0056439845d1c29293b7e8c98d4854", size = 3300985, upload-time = "2026-03-11T13:31:50.028Z" },
+]
+
+[[package]]
 name = "notebook"
 version = "7.5.5"
 source = { registry = "https://pypi.org/simple" }
@@ -4119,6 +4132,7 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
+    { name = "nibabel" },
     { name = "pooch" },
     { name = "pytest" },
     { name = "scikit-image" },
@@ -4145,6 +4159,7 @@ requires-dist = [
     { name = "napari-simpleitk-image-processing", marker = "extra == 'napari'", specifier = ">=0.4.9" },
     { name = "napari-skimage", marker = "extra == 'napari'", specifier = ">=0.6.0" },
     { name = "networkx", specifier = ">=3.4" },
+    { name = "nibabel", marker = "extra == 'dev'", specifier = ">=5.4.2" },
     { name = "numba", specifier = ">=0.65.0" },
     { name = "numpy", specifier = ">=2.4.4" },
     { name = "pillow", specifier = ">=12.2.0" },
