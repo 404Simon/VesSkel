@@ -224,12 +224,15 @@ def _run_parallel(
 
     proc = "process" if jobs == 1 else "processes"
     print(f"Spawning {jobs} worker {proc}...", flush=True)
-    with ProcessPoolExecutor(max_workers=jobs, mp_context=ctx) as ex:
-        futures = {
-            ex.submit(process_one, p, sn, out_dir, config): (idx, p.name)
-            for idx, (p, sn) in enumerate(zip(input_paths, safe_names), 1)
-        }
 
+    ex = ProcessPoolExecutor(max_workers=jobs, mp_context=ctx)
+    futures = {
+        ex.submit(process_one, p, sn, out_dir, config): (idx, p.name)
+        for idx, (p, sn) in enumerate(zip(input_paths, safe_names), 1)
+    }
+
+    interrupted = False
+    try:
         for fut in as_completed(futures):
             idx, name = futures[fut]
             try:
@@ -242,6 +245,14 @@ def _run_parallel(
                     flush=True,
                 )
                 errors.append((idx, name, exc))
+    except KeyboardInterrupt:
+        interrupted = True
+        print("\nInterrupted by user. Killing workers...", flush=True)
+        ex.kill_workers()
+        print("Shutdown complete.", flush=True)
+    finally:
+        if not interrupted:
+            ex.shutdown(wait=True)
 
     if errors:
         failures = "\n".join(
