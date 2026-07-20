@@ -6,9 +6,10 @@ import time
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import numpy as np
 from magicgui import magicgui
 from magicgui.widgets import Container, Label, PushButton
-from napari.layers import Layer
+from napari.layers import Layer, Shapes
 from napari.utils.notifications import show_error, show_info
 from qtpy.QtWidgets import QFileDialog
 
@@ -160,6 +161,7 @@ class VesselAnalysisWidget(Container):
             self.branch_color_warning.visible = needs_radius and radius_off
 
         self.branch_color_widget.changed.connect(_update_branch_color_warning)
+        self.branch_color_widget.changed.connect(self._recolor_branch_layers)
 
         # connection to include_vessel_radius_widget happens below
         # after that widget is created
@@ -426,6 +428,29 @@ class VesselAnalysisWidget(Container):
         if dir_path:
             self._output_dir = Path(dir_path)
             self.select_outdir_btn.text = str(self._output_dir)
+
+    def _recolor_branch_layers(self, *args) -> None:
+        """Recolor existing branch layers without re-running analysis."""
+        prop = self.branch_color_widget.value
+
+        for layer in self.viewer.layers:
+            if not isinstance(layer, Shapes) or not layer.name.endswith("_branches"):
+                continue
+
+            props = layer.properties
+            values = props.get(prop) if props is not None else None
+            if values is not None:
+                numeric = np.asarray(values, dtype=float)
+                finite = numeric[np.isfinite(numeric)]
+                if finite.size > 1 and float(np.min(finite)) < float(np.max(finite)):
+                    vmin = float(np.min(finite))
+                    vmax = float(np.max(finite))
+                    layer.edge_color = prop
+                    layer.edge_colormap = "turbo"
+                    layer.edge_contrast_limits = (vmin, vmax)
+                    continue
+
+            layer.edge_color = "#30d5c8"
 
     def _on_analyze(self) -> None:
         """Execute analysis with current settings."""
