@@ -17,7 +17,7 @@ class TestExtractionConfig:
         c = ExtractionConfig()
         assert c.branches is False
         assert c.branch_text is False
-        assert c.summary is False
+        assert c.summary is True
         assert c.fractal_dimension is False
         assert c.vessel_radius is False
 
