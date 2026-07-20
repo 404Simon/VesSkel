@@ -6,18 +6,18 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from vesskel._batch import (
-    _load_image,
-    _sanitize_for_csv,
-    _save_radius,
-    _save_skeleton,
-    _write_csv,
+from vesskel._io import (
+    load_image,
+    sanitize_for_csv,
+    save_radius,
+    save_skeleton,
+    write_csv,
 )
 from vesskel.cli import _discover_input_paths
 from vesskel.config import CONFIG_SCHEMA_VERSION, PipelineConfig
 
 HEAVY_MODULES = frozenset(
-    {"numpy", "PIL", "PIL.Image", "vesskel.pipeline", "vesskel._batch"}
+    {"numpy", "PIL", "PIL.Image", "vesskel.pipeline", "vesskel._batch", "vesskel._io"}
 )
 
 
@@ -116,19 +116,19 @@ class TestLoadImage:
     def test_load_png(self, tmp_path):
         path = tmp_path / "test.png"
         Image.fromarray(np.zeros((3, 3), dtype=np.uint8)).save(path)
-        arr = _load_image(path)
+        arr = load_image(path)
         assert arr.shape == (3, 3)
 
     def test_load_jpg(self, tmp_path):
         path = tmp_path / "test.jpg"
         Image.fromarray(np.ones((4, 4), dtype=np.uint8) * 128).save(path)
-        arr = _load_image(path)
+        arr = load_image(path)
         assert arr.shape == (4, 4)
 
     def test_load_npy(self, tmp_path):
         path = tmp_path / "test.npy"
         np.save(path, np.ones((5, 5), dtype=np.uint8))
-        arr = _load_image(path)
+        arr = load_image(path)
         assert arr.shape == (5, 5)
 
     def test_load_rgb_collapses_to_grayscale(self, tmp_path):
@@ -136,7 +136,7 @@ class TestLoadImage:
         rgb = np.zeros((8, 8, 3), dtype=np.uint8)
         rgb[2:6, 2:6, 0] = 255
         Image.fromarray(rgb).save(path)
-        arr = _load_image(path)
+        arr = load_image(path)
         assert arr.ndim == 2
         assert arr.shape == (8, 8)
         assert arr[4, 4] == 255
@@ -147,19 +147,19 @@ class TestLoadImage:
         rgba = np.zeros((6, 6, 4), dtype=np.uint8)
         rgba[:, :, :3] = 100
         Image.fromarray(rgba).save(path)
-        arr = _load_image(path)
+        arr = load_image(path)
         assert arr.ndim == 2
 
     def test_load_2d_passes_through(self, tmp_path):
         path = tmp_path / "gray.png"
         Image.fromarray(np.eye(10, dtype=np.uint8) * 255).save(path)
-        arr = _load_image(path)
+        arr = load_image(path)
         assert arr.ndim == 2
 
     def test_load_3d_npy(self, tmp_path):
         path = tmp_path / "vol.npy"
         np.save(path, np.ones((3, 4, 5), dtype=np.uint8))
-        arr = _load_image(path)
+        arr = load_image(path)
         assert arr.shape == (3, 4, 5)
 
     def test_load_invalid_dimension_raises(self, tmp_path):
@@ -168,40 +168,40 @@ class TestLoadImage:
         with pytest.raises(
             ValueError, match=r"Expected 2D or 3D image, got shape=\(2, 2, 2, 2\)"
         ):
-            _load_image(path)
+            load_image(path)
 
 
 class TestSanitizeForCsv:
     def test_numpy_int(self):
-        assert _sanitize_for_csv(np.int64(42)) == 42
+        assert sanitize_for_csv(np.int64(42)) == 42
 
     def test_numpy_float(self):
-        result = _sanitize_for_csv(np.float64(3.14))
+        result = sanitize_for_csv(np.float64(3.14))
         assert isinstance(result, float)
         assert result == 3.14
 
     def test_python_int_passes_through(self):
-        assert _sanitize_for_csv(42) == 42
+        assert sanitize_for_csv(42) == 42
 
     def test_python_str_passes_through(self):
-        assert _sanitize_for_csv("hello") == "hello"
+        assert sanitize_for_csv("hello") == "hello"
 
     def test_none_passes_through(self):
-        assert _sanitize_for_csv(None) is None
+        assert sanitize_for_csv(None) is None
 
     def test_bool_passes_through(self):
-        assert _sanitize_for_csv(True) is True
-        assert _sanitize_for_csv(False) is False
+        assert sanitize_for_csv(True) is True
+        assert sanitize_for_csv(False) is False
 
     def test_list_passes_through(self):
-        assert _sanitize_for_csv([1, "a"]) == [1, "a"]
+        assert sanitize_for_csv([1, "a"]) == [1, "a"]
 
 
 class TestWriteCsv:
     def test_basic_write(self, tmp_path):
         path = tmp_path / "out.csv"
         rows = [{"a": 1, "b": 2}, {"a": 3, "b": 4}]
-        _write_csv(path, rows)
+        write_csv(path, rows)
         with path.open() as f:
             reader = csv.DictReader(f)
             data = list(reader)
@@ -211,7 +211,7 @@ class TestWriteCsv:
 
     def test_empty_rows_writes_nothing(self, tmp_path):
         path = tmp_path / "empty.csv"
-        _write_csv(path, [])
+        write_csv(path, [])
         assert not path.exists()
 
 
@@ -219,14 +219,14 @@ class TestSaveSkeleton:
     def test_save_npy(self, tmp_path):
         path = tmp_path / "skel"
         skeleton = np.eye(10, dtype=np.uint8)
-        _save_skeleton(path, skeleton, npy=True, png=False)
+        save_skeleton(path, skeleton, npy=True, png=False)
         loaded = np.load(path.with_suffix(".npy"))
         assert np.array_equal(loaded, skeleton)
 
     def test_save_png_2d(self, tmp_path):
         path = tmp_path / "skel"
         skeleton = np.eye(8, dtype=np.uint8)
-        _save_skeleton(path, skeleton, npy=False, png=True)
+        save_skeleton(path, skeleton, npy=False, png=True)
         loaded = np.array(Image.open(path.with_suffix(".png")))
         assert loaded.shape == (8, 8)
         assert np.array_equal(loaded > 0, skeleton > 0)
@@ -235,12 +235,12 @@ class TestSaveSkeleton:
         path = tmp_path / "skel"
         skeleton = np.eye(4, dtype=np.uint8).reshape(4, 1, 4)
         with pytest.raises(ValueError, match="PNG skeleton output"):
-            _save_skeleton(path, skeleton, npy=False, png=True)
+            save_skeleton(path, skeleton, npy=False, png=True)
 
     def test_save_both_formats(self, tmp_path):
         path = tmp_path / "skel"
         skeleton = np.eye(6, dtype=np.uint8)
-        _save_skeleton(path, skeleton, npy=True, png=True)
+        save_skeleton(path, skeleton, npy=True, png=True)
         assert path.with_suffix(".npy").exists()
         assert path.with_suffix(".png").exists()
         npy_loaded = np.load(path.with_suffix(".npy"))
@@ -249,14 +249,14 @@ class TestSaveSkeleton:
 
     def test_save_neither_does_nothing(self, tmp_path):
         path = tmp_path / "skel"
-        _save_skeleton(path, np.eye(3, dtype=np.uint8), npy=False, png=False)
+        save_skeleton(path, np.eye(3, dtype=np.uint8), npy=False, png=False)
         assert not path.with_suffix(".npy").exists()
         assert not path.with_suffix(".png").exists()
 
     def test_npy_output_is_uint8(self, tmp_path):
         path = tmp_path / "skel"
         skeleton = np.ones((4, 4), dtype=np.int32)
-        _save_skeleton(path, skeleton, npy=True, png=False)
+        save_skeleton(path, skeleton, npy=True, png=False)
         loaded = np.load(path.with_suffix(".npy"))
         assert loaded.dtype == np.uint8
 
@@ -265,14 +265,14 @@ class TestSaveRadius:
     def test_save_and_load(self, tmp_path):
         path = tmp_path / "radius"
         radius = np.random.default_rng(7).random((4, 4))
-        _save_radius(path, radius)
+        save_radius(path, radius)
         loaded = np.load(path.with_suffix(".npy"))
         np.testing.assert_array_equal(loaded, radius)
 
     def test_saved_as_float64(self, tmp_path):
         path = tmp_path / "radius"
         radius = np.array([[1.5, 2.5], [3.5, 4.5]], dtype=np.float64)
-        _save_radius(path, radius)
+        save_radius(path, radius)
         loaded = np.load(path.with_suffix(".npy"))
         assert loaded.dtype == np.float64
 

@@ -13,7 +13,7 @@ from napari.layers import Layer, Shapes
 from napari.utils.notifications import show_error, show_info
 from qtpy.QtWidgets import QFileDialog
 
-from vesskel._batch import _save_skeleton, _save_radius, _write_csv
+from vesskel._io import save_analysis_outputs
 from vesskel.pipeline import analyze_binary_image
 
 if TYPE_CHECKING:
@@ -504,33 +504,9 @@ class VesselAnalysisWidget(Container):
 
             # -- save results to disk if output directory is set ----------
             if self._output_dir is not None:
-                out = self._output_dir / img.name
-                out.mkdir(parents=True, exist_ok=True)
-
-                o = pipeline_config.output
-                if o.write_skeleton_npy or o.write_skeleton_png:
-                    _save_skeleton(
-                        out / f"{img.name}_skeleton",
-                        result.skeleton,
-                        npy=o.write_skeleton_npy,
-                        png=o.write_skeleton_png,
-                    )
-
-                if o.write_radius and result.radius_matrix is not None:
-                    _save_radius(out / f"{img.name}_radius", result.radius_matrix)
-
-                if o.write_branch_csv and result.branch_records:
-                    _write_csv(out / f"{img.name}_branches.csv", result.branch_records)
-
-                if o.write_node_csv and result.node_records:
-                    _write_csv(out / f"{img.name}_nodes.csv", result.node_records)
-
-                if o.write_summary_csv and result.summary_features:
-                    _write_csv(
-                        out / f"{img.name}_summary.csv",
-                        [{"image": img.name, **result.summary_features}],
-                    )
-
+                save_analysis_outputs(
+                    self._output_dir, img.name, result, pipeline_config.output
+                )
                 show_info(f"Results saved to {self._output_dir / img.name}")
 
         except (ValueError, RuntimeError, OSError) as e:
