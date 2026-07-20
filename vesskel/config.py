@@ -77,21 +77,7 @@ class ExtractionConfig:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ExtractionConfig:
         _warn_unknown_keys({f.name for f in fields(cls)}, data)
-        return cls(
-            branches=data.get("branches", False),
-            branch_color_property=data.get("branch_color_property", "tortuosity"),
-            branch_text=data.get("branch_text", False),
-            nodes=data.get("nodes", False),
-            summary=data.get("summary", False),
-            fractal_dimension=data.get("fractal_dimension", False),
-            vessel_radius=data.get("vessel_radius", False),
-            junction_cleanup=data.get("junction_cleanup", False),
-            cleanup_threshold_factor=data.get("cleanup_threshold_factor", 2.5),
-            closing_iterations=data.get("closing_iterations", 0),
-            fill_holes=data.get("fill_holes", False),
-            max_hole_size=data.get("max_hole_size", 0),
-            show_preprocessed=data.get("show_preprocessed", False),
-        )
+        return cls(**{f.name: data.get(f.name, f.default) for f in fields(cls)})
 
 
 @dataclass
@@ -119,14 +105,7 @@ class OutputConfig:
     def from_dict(cls, data: dict[str, Any] | None) -> OutputConfig:
         data = data or {}
         _warn_unknown_keys({f.name for f in fields(cls)}, data)
-        return cls(
-            write_skeleton_npy=bool(data.get("write_skeleton_npy", True)),
-            write_skeleton_png=bool(data.get("write_skeleton_png", False)),
-            write_summary_csv=bool(data.get("write_summary_csv", True)),
-            write_branch_csv=bool(data.get("write_branch_csv", False)),
-            write_node_csv=bool(data.get("write_node_csv", False)),
-            write_radius=bool(data.get("write_radius", False)),
-        )
+        return cls(**{f.name: bool(data.get(f.name, f.default)) for f in fields(cls)})
 
 
 @dataclass
