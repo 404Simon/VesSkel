@@ -63,7 +63,7 @@ class VesselAnalysisWidget(Container):
             branch_color_property: str = "tortuosity",
             extract_branch_text: bool = False,
             extract_nodes: bool = False,
-            extract_summary: bool = False,
+            extract_summary: bool = True,
             include_fractal: bool = False,
             include_vessel_radius: bool = False,
             junction_cleanup: bool = False,
@@ -86,9 +86,17 @@ class VesselAnalysisWidget(Container):
                 "widget_type": "ComboBox",
             },
             extract_branch_text={"annotation": bool, "value": False},
-            extract_summary={"annotation": bool, "value": False},
-            include_fractal={"annotation": bool, "value": False, "label": "Fractal dimension"},
-            include_vessel_radius={"annotation": bool, "value": False, "label": "Radius features"},
+            extract_summary={"annotation": bool, "value": True},
+            include_fractal={
+                "annotation": bool,
+                "value": False,
+                "label": "Fractal dimension",
+            },
+            include_vessel_radius={
+                "annotation": bool,
+                "value": False,
+                "label": "Radius features",
+            },
             junction_cleanup={"annotation": bool, "value": False},
             cleanup_threshold_factor={
                 "annotation": float,
@@ -169,6 +177,12 @@ class VesselAnalysisWidget(Container):
 
         self.extract_branch_text_widget = extraction_gui.extract_branch_text
         self.extract_branch_text_widget.label = "Add branch labels"
+        self.extract_branch_text_widget.enabled = self.extract_branches_widget.value
+
+        def _on_branches_toggle_branch_text(*args) -> None:
+            self.extract_branch_text_widget.enabled = self.extract_branches_widget.value
+
+        self.extract_branches_widget.changed.connect(_on_branches_toggle_branch_text)
 
         self.extract_summary_widget = extraction_gui.extract_summary
         self.extract_summary_widget.label = "Extract summary statistics"
@@ -266,14 +280,45 @@ class VesselAnalysisWidget(Container):
         self.write_summary_csv_widget = output_gui.write_summary_csv
         self.write_summary_csv_widget.label = "Write summary CSV"
 
+        self.write_radius_widget = output_gui.write_radius
+        self.write_radius_widget.label = "Write radius matrix (.npy)"
+        self.write_radius_widget.enabled = self.include_vessel_radius_widget.value
+
+        def _on_vessel_radius_toggle_write_radius(*args) -> None:
+            self.write_radius_widget.enabled = self.include_vessel_radius_widget.value
+
+        self.include_vessel_radius_widget.changed.connect(
+            _on_vessel_radius_toggle_write_radius
+        )
+
+        self.write_summary_csv_widget.enabled = self.extract_summary_widget.value
+
+        def _on_summary_toggle_write_summary_csv(*args) -> None:
+            self.write_summary_csv_widget.enabled = self.extract_summary_widget.value
+
+        self.extract_summary_widget.changed.connect(
+            _on_summary_toggle_write_summary_csv
+        )
+
         self.write_branch_csv_widget = output_gui.write_branch_csv
         self.write_branch_csv_widget.label = "Write branch CSV"
+        self.write_branch_csv_widget.enabled = self.extract_branches_widget.value
+
+        def _on_branches_toggle_write_branch_csv(*args) -> None:
+            self.write_branch_csv_widget.enabled = self.extract_branches_widget.value
+
+        self.extract_branches_widget.changed.connect(
+            _on_branches_toggle_write_branch_csv
+        )
 
         self.write_node_csv_widget = output_gui.write_node_csv
         self.write_node_csv_widget.label = "Write node CSV"
+        self.write_node_csv_widget.enabled = self.extract_nodes_widget.value
 
-        self.write_radius_widget = output_gui.write_radius
-        self.write_radius_widget.label = "Write radius matrix (.npy)"
+        def _on_nodes_toggle_write_node_csv(*args) -> None:
+            self.write_node_csv_widget.enabled = self.extract_nodes_widget.value
+
+        self.extract_nodes_widget.changed.connect(_on_nodes_toggle_write_node_csv)
 
         output_group.append(self.write_skeleton_npy_widget)
         output_group.append(self.write_skeleton_png_widget)

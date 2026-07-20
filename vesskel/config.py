@@ -47,7 +47,7 @@ class ExtractionConfig:
     branch_color_property: str = "tortuosity"
     branch_text: bool = False
     nodes: bool = False
-    summary: bool = False
+    summary: bool = True
     fractal_dimension: bool = False
     vessel_radius: bool = False
     junction_cleanup: bool = False
