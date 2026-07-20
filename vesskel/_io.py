@@ -80,8 +80,26 @@ def save_analysis_outputs(
     base_name: str,
     result: AnalysisResult,
     config: OutputConfig,
+    *,
+    write_summary: bool = True,
 ) -> None:
-    """Write all analysis results to disk according to *config*."""
+    """Write all analysis results to disk according to *config*.
+
+    Parameters
+    ----------
+    output_dir
+        Parent directory under which a *base_name* subdirectory is created.
+    base_name
+        Used as subdirectory name and as prefix for all output files.
+    result
+        Analysis result to save.
+    config
+        Output configuration controlling which files are written.
+    write_summary
+        When True (default), also write a per-image summary CSV inside the
+        output subdirectory.  Set to False in batch mode where the caller
+        produces an aggregated summary.csv at the top level.
+    """
     out = output_dir / base_name
     out.mkdir(parents=True, exist_ok=True)
 
@@ -102,7 +120,7 @@ def save_analysis_outputs(
     if config.write_node_csv and result.node_records:
         write_csv(out / f"{base_name}_nodes.csv", result.node_records)
 
-    if config.write_summary_csv and result.summary_features:
+    if write_summary and config.write_summary_csv and result.summary_features:
         write_csv(
             out / f"{base_name}_summary.csv",
             [{"image": base_name, **result.summary_features}],
