@@ -19,6 +19,8 @@ def process_one(
     image = load_image(in_path)
     result = analyze_binary_image(image=image, base_name=in_path.stem, config=config)
 
-    save_analysis_outputs(out_dir, safe_name, result, config.output)
+    save_analysis_outputs(
+        out_dir, safe_name, result, config.output, write_summary=False
+    )
 
     return {"image": in_path.name, **result.summary_features}
