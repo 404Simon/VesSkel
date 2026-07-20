@@ -167,7 +167,8 @@ def _compute_safe_names(input_paths: list[Path]) -> list[str]:
 
 
 def _run_batch(args: argparse.Namespace) -> int:
-    from vesskel._batch import _write_csv, process_one
+    from vesskel._io import write_csv
+    from vesskel._batch import process_one
 
     config = load_pipeline_config(Path(args.config))
     input_paths = _discover_input_paths(args.input, recursive=args.recursive)
@@ -196,7 +197,7 @@ def _run_batch(args: argparse.Namespace) -> int:
     summary_rows.sort(key=lambda r: str(r.get("image", "")))
 
     if config.output.write_summary_csv:
-        _write_csv(out_dir / "summary.csv", summary_rows)
+        write_csv(out_dir / "summary.csv", summary_rows)
 
     print(
         f"Processed {len(input_paths)} image(s) with config '{args.config}'. "
