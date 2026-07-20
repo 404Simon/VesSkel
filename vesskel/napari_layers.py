@@ -47,7 +47,12 @@ def extract_skeleton_layers(
     layers = []
 
     if config.branches:
-        branch_layer = _extract_branch_features_layer(base_name, graph, branch_data)
+        branch_layer = _extract_branch_features_layer(
+            base_name,
+            graph,
+            branch_data,
+            color_property=config.branch_color_property,
+        )
         if branch_layer is not None:
             layers.append(branch_layer)
 
@@ -103,6 +108,7 @@ def _extract_branch_features_layer(
     base_name: str,
     graph: Skeleton,
     branch_data,
+    color_property: str = "tortuosity",
 ) -> "napari.types.LayerDataTuple | None":  # noqa: F821
     """Extract branch features and generate paths layer.
 
@@ -114,6 +120,9 @@ def _extract_branch_features_layer(
         Pre-built skan Skeleton graph.
     branch_data : DataFrame
         Pre-computed branch summary from `skan.summarize`.
+    color_property : str
+        Branch property to use for edge coloring. Must be a numeric column
+        in branch_data. Defaults to "tortuosity".
 
     Returns
     -------
@@ -134,11 +143,6 @@ def _extract_branch_features_layer(
 
     path_data = [graph.path_coordinates(i) for i in range(len(branch_data))]
 
-    finite_tortuosity = tortuosity[np.isfinite(tortuosity)]
-    varied_tortuosity = finite_tortuosity.size > 0 and float(
-        np.min(finite_tortuosity)
-    ) < float(np.max(finite_tortuosity))
-
     meta = {
         "name": f"{base_name}_branches",
         "shape_type": "path",
@@ -148,15 +152,19 @@ def _extract_branch_features_layer(
         "opacity": 0.95,
     }
 
-    if varied_tortuosity:
-        vmin = float(np.min(finite_tortuosity))
-        vmax = float(np.max(finite_tortuosity))
-        meta["edge_color"] = "tortuosity"
-        meta["edge_colormap"] = "turbo"
-        meta["edge_contrast_limits"] = (vmin, vmax)
-    else:
-        meta["edge_color"] = "#30d5c8"
+    values = branch_data.get(color_property)
+    if values is not None:
+        numeric = np.asarray(values, dtype=float)
+        finite = numeric[np.isfinite(numeric)]
+        if finite.size > 1 and float(np.min(finite)) < float(np.max(finite)):
+            vmin = float(np.min(finite))
+            vmax = float(np.max(finite))
+            meta["edge_color"] = color_property
+            meta["edge_colormap"] = "turbo"
+            meta["edge_contrast_limits"] = (vmin, vmax)
+            return (path_data, meta, "shapes")
 
+    meta["edge_color"] = "#30d5c8"
     return (path_data, meta, "shapes")
 
 

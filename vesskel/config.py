@@ -8,7 +8,26 @@ from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Any
 
-CONFIG_SCHEMA_VERSION = 2
+CONFIG_SCHEMA_VERSION = 3
+
+COLORABLE_BRANCH_PROPERTIES = [
+    "tortuosity",
+    "branch-distance",
+    "euclidean-distance",
+    "straightness",
+    "mean-pixel-value",
+    "stdev-pixel-value",
+    "mean_radius",
+    "std_radius",
+    "min_radius",
+    "max_radius",
+    "mean_diameter",
+    "std_diameter",
+    "min_diameter",
+    "max_diameter",
+    "volume",
+    "surface_area",
+]
 
 
 def _warn_unknown_keys(known: set[str], data: dict[str, Any]) -> None:
@@ -25,6 +44,7 @@ class ExtractionConfig:
     """Configuration for what to extract from a skeleton."""
 
     branches: bool = False
+    branch_color_property: str = "tortuosity"
     branch_text: bool = False
     nodes: bool = False
     summary: bool = False
@@ -40,6 +60,7 @@ class ExtractionConfig:
     def to_dict(self) -> dict[str, Any]:
         return {
             "branches": self.branches,
+            "branch_color_property": self.branch_color_property,
             "branch_text": self.branch_text,
             "nodes": self.nodes,
             "summary": self.summary,
@@ -58,6 +79,7 @@ class ExtractionConfig:
         _warn_unknown_keys({f.name for f in fields(cls)}, data)
         return cls(
             branches=data.get("branches", False),
+            branch_color_property=data.get("branch_color_property", "tortuosity"),
             branch_text=data.get("branch_text", False),
             nodes=data.get("nodes", False),
             summary=data.get("summary", False),

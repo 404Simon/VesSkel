@@ -7,10 +7,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from magicgui import magicgui
-from magicgui.widgets import Container, PushButton
+from magicgui.widgets import Container, Label, PushButton
 from napari.layers import Layer
 from napari.utils.notifications import show_error, show_info
 from qtpy.QtWidgets import QFileDialog
+
+from vesskel._batch import _save_skeleton, _save_radius, _write_csv
+from vesskel.pipeline import analyze_binary_image
 
 if TYPE_CHECKING:
     # These imports are only used for annotations and are therefore
@@ -18,14 +21,26 @@ if TYPE_CHECKING:
     from napari.layers import Image  # noqa: F401
 
 from vesskel.config import (
+    COLORABLE_BRANCH_PROPERTIES,
     ExtractionConfig,
     OutputConfig,
     PipelineConfig,
     load_pipeline_config,
     save_pipeline_config,
 )
-from vesskel._batch import _save_skeleton, _save_radius, _write_csv
-from vesskel.pipeline import analyze_binary_image
+
+_RADIUS_REQUIRED_PROPS = {
+    "mean_radius",
+    "std_radius",
+    "min_radius",
+    "max_radius",
+    "mean_diameter",
+    "std_diameter",
+    "min_diameter",
+    "max_diameter",
+    "volume",
+    "surface_area",
+}
 
 
 class VesselAnalysisWidget(Container):
@@ -44,6 +59,7 @@ class VesselAnalysisWidget(Container):
         def _extraction_params(
             image: "napari.layers.Image",  # noqa: F821
             extract_branches: bool = False,
+            branch_color_property: str = "tortuosity",
             extract_branch_text: bool = False,
             extract_nodes: bool = False,
             extract_summary: bool = False,
@@ -62,6 +78,12 @@ class VesselAnalysisWidget(Container):
             _extraction_params,
             image={"label": "Input image"},
             extract_branches={"annotation": bool, "value": False},
+            branch_color_property={
+                "annotation": str,
+                "value": "tortuosity",
+                "choices": COLORABLE_BRANCH_PROPERTIES,
+                "widget_type": "ComboBox",
+            },
             extract_branch_text={"annotation": bool, "value": False},
             extract_summary={"annotation": bool, "value": False},
             include_fractal={"annotation": bool, "value": False},
@@ -120,6 +142,28 @@ class VesselAnalysisWidget(Container):
         self.extract_branches_widget = extraction_gui.extract_branches
         self.extract_branches_widget.label = "Extract branches"
 
+        self.branch_color_widget = extraction_gui.branch_color_property
+        self.branch_color_widget.label = "Branch color by"
+        self.branch_color_widget.enabled = False
+
+        self.branch_color_warning = Label(value="⚠️ Requires Vessel Radius")
+        self.branch_color_warning.visible = False
+
+        def _on_branches_toggle(enabled: bool | None = None) -> None:
+            self.branch_color_widget.enabled = self.extract_branches_widget.value
+
+        self.extract_branches_widget.changed.connect(_on_branches_toggle)
+
+        def _update_branch_color_warning(*args) -> None:
+            needs_radius = self.branch_color_widget.value in _RADIUS_REQUIRED_PROPS
+            radius_off = not self.include_vessel_radius_widget.value
+            self.branch_color_warning.visible = needs_radius and radius_off
+
+        self.branch_color_widget.changed.connect(_update_branch_color_warning)
+
+        # connection to include_vessel_radius_widget happens below
+        # after that widget is created
+
         self.extract_branch_text_widget = extraction_gui.extract_branch_text
         self.extract_branch_text_widget.label = "Add branch labels"
 
@@ -130,9 +174,63 @@ class VesselAnalysisWidget(Container):
         self.extract_nodes_widget.label = "Extract node features"
 
         extraction_group.append(self.extract_branches_widget)
+        extraction_group.append(self.branch_color_widget)
+        extraction_group.append(self.branch_color_warning)
         extraction_group.append(self.extract_branch_text_widget)
         extraction_group.append(self.extract_summary_widget)
         extraction_group.append(self.extract_nodes_widget)
+
+        # ============================================================
+        # Cleanup
+        # ============================================================
+        cleanup_group = Container()
+        cleanup_group.label = "Cleanup"
+
+        self.fill_holes_widget = extraction_gui.fill_holes
+        self.fill_holes_widget.label = "Fill holes in segmentation"
+
+        self.max_hole_size_widget = extraction_gui.max_hole_size
+        self.max_hole_size_widget.label = "Max hole size (pixels)"
+        self.max_hole_size_widget.enabled = False
+
+        def _on_fill_holes_toggle(enabled: bool | None = None) -> None:
+            self.max_hole_size_widget.enabled = self.fill_holes_widget.value
+
+        self.fill_holes_widget.changed.connect(_on_fill_holes_toggle)
+
+        self.closing_iterations_widget = extraction_gui.closing_iterations
+        self.closing_iterations_widget.label = "Closing iterations"
+
+        self.junction_cleanup_widget = extraction_gui.junction_cleanup
+        self.junction_cleanup_widget.label = "Collapse triangle junction artifacts"
+
+        self.cleanup_threshold_widget = extraction_gui.cleanup_threshold_factor
+        self.cleanup_threshold_widget.label = "Cleanup threshold factor"
+        self.cleanup_threshold_widget.enabled = False
+
+        def _on_junction_cleanup_toggle(enabled: bool | None = None) -> None:
+            self.cleanup_threshold_widget.enabled = self.junction_cleanup_widget.value
+
+        self.junction_cleanup_widget.changed.connect(_on_junction_cleanup_toggle)
+
+        self.show_preprocessed_widget = extraction_gui.show_preprocessed
+        self.show_preprocessed_widget.label = "Show preprocessed binary layer"
+        self.show_preprocessed_widget.enabled = False
+
+        def _update_preprocessed_enabled(*args) -> None:
+            self.show_preprocessed_widget.enabled = (
+                self.fill_holes_widget.value or self.closing_iterations_widget.value > 0
+            )
+
+        self.fill_holes_widget.changed.connect(_update_preprocessed_enabled)
+        self.closing_iterations_widget.changed.connect(_update_preprocessed_enabled)
+
+        cleanup_group.append(self.fill_holes_widget)
+        cleanup_group.append(self.max_hole_size_widget)
+        cleanup_group.append(self.closing_iterations_widget)
+        cleanup_group.append(self.junction_cleanup_widget)
+        cleanup_group.append(self.cleanup_threshold_widget)
+        cleanup_group.append(self.show_preprocessed_widget)
 
         # ============================================================
         # Advanced Features
@@ -141,40 +239,16 @@ class VesselAnalysisWidget(Container):
         advanced_group.label = "Advanced Features"
 
         self.include_fractal_widget = extraction_gui.include_fractal
-        self.include_fractal_widget.label = "Include fractal dimension (slow)"
+        self.include_fractal_widget.label = "Fractal dimension"
 
         advanced_group.append(self.include_fractal_widget)
 
         self.include_vessel_radius_widget = extraction_gui.include_vessel_radius
-        self.include_vessel_radius_widget.label = "Compute vessel radius and diameter"
+        self.include_vessel_radius_widget.label = "Radius features"
+
+        self.include_vessel_radius_widget.changed.connect(_update_branch_color_warning)
 
         advanced_group.append(self.include_vessel_radius_widget)
-
-        self.junction_cleanup_widget = extraction_gui.junction_cleanup
-        self.junction_cleanup_widget.label = "Collapse triangle junction artifacts"
-
-        self.cleanup_threshold_widget = extraction_gui.cleanup_threshold_factor
-        self.cleanup_threshold_widget.label = "Cleanup threshold factor"
-
-        advanced_group.append(self.junction_cleanup_widget)
-        advanced_group.append(self.cleanup_threshold_widget)
-
-        self.fill_holes_widget = extraction_gui.fill_holes
-        self.fill_holes_widget.label = "Fill holes in segmentation"
-
-        self.closing_iterations_widget = extraction_gui.closing_iterations
-        self.closing_iterations_widget.label = "Closing iterations"
-
-        self.max_hole_size_widget = extraction_gui.max_hole_size
-        self.max_hole_size_widget.label = "Max hole size (pixels)"
-
-        self.show_preprocessed_widget = extraction_gui.show_preprocessed
-        self.show_preprocessed_widget.label = "Show preprocessed binary layer"
-
-        advanced_group.append(self.fill_holes_widget)
-        advanced_group.append(self.closing_iterations_widget)
-        advanced_group.append(self.max_hole_size_widget)
-        advanced_group.append(self.show_preprocessed_widget)
 
         # ============================================================
         # Output Settings (CLI file export options)
@@ -244,6 +318,7 @@ class VesselAnalysisWidget(Container):
         # ============================================================
         self.append(self.image_widget)
         self.append(extraction_group)
+        self.append(cleanup_group)
         self.append(advanced_group)
         self.append(output_group)
         self.append(outdir_group)
@@ -259,6 +334,7 @@ class VesselAnalysisWidget(Container):
         return PipelineConfig(
             extraction=ExtractionConfig(
                 branches=self.extract_branches_widget.value,
+                branch_color_property=self.branch_color_widget.value,
                 branch_text=self.extract_branch_text_widget.value,
                 nodes=self.extract_nodes_widget.value,
                 summary=self.extract_summary_widget.value,
@@ -284,6 +360,7 @@ class VesselAnalysisWidget(Container):
     def _set_pipeline_config(self, config: PipelineConfig) -> None:
         e = config.extraction
         self.extract_branches_widget.value = e.branches
+        self.branch_color_widget.value = e.branch_color_property
         self.extract_branch_text_widget.value = e.branch_text
         self.extract_nodes_widget.value = e.nodes
         self.extract_summary_widget.value = e.summary
