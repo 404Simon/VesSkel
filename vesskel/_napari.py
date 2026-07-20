@@ -87,7 +87,8 @@ class VesselAnalysisWidget(Container):
             },
             extract_branch_text={"annotation": bool, "value": False},
             extract_summary={"annotation": bool, "value": False},
-            include_fractal={"annotation": bool, "value": False},
+            include_fractal={"annotation": bool, "value": False, "label": "Fractal dimension"},
+            include_vessel_radius={"annotation": bool, "value": False, "label": "Radius features"},
             junction_cleanup={"annotation": bool, "value": False},
             cleanup_threshold_factor={
                 "annotation": float,
@@ -241,12 +242,10 @@ class VesselAnalysisWidget(Container):
         advanced_group.label = "Advanced Features"
 
         self.include_fractal_widget = extraction_gui.include_fractal
-        self.include_fractal_widget.label = "Fractal dimension"
 
         advanced_group.append(self.include_fractal_widget)
 
         self.include_vessel_radius_widget = extraction_gui.include_vessel_radius
-        self.include_vessel_radius_widget.label = "Radius features"
 
         self.include_vessel_radius_widget.changed.connect(_update_branch_color_warning)
 
