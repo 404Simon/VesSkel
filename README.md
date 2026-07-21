@@ -44,9 +44,10 @@ Extraction and output settings are defined in a JSON config file (e.g. the one e
 
 ```json
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "extraction": {
     "branches": false,
+    "branch_color_property": "tortuosity",
     "branch_text": false,
     "nodes": false,
     "summary": true,
@@ -73,9 +74,10 @@ Extraction and output settings are defined in a JSON config file (e.g. the one e
 | Key | Type | Default | Description |
 |---|---|---|---|
 | `extraction.branches` | bool | `false` | Extract per-branch features for CSV export or napari visualization |
+| `extraction.branch_color_property` | str | `"tortuosity"` | Branch property used to color the napari shapes layer; one of `tortuosity`, `straightness`, `mean_radius`, `std_radius`, `volume`, `surface_area`, ... |
 | `extraction.branch_text` | bool | `false` | Display branch ID, length, and tortuosity labels on the napari branch layer |
 | `extraction.nodes` | bool | `false` | Extract per-node features for CSV export or napari visualization |
-| `extraction.summary` | bool | `false` | Compute summary features  |
+| `extraction.summary` | bool | `true` | Compute summary features  |
 | `extraction.fractal_dimension` | bool | `false` | Compute fractal dimension of the skeleton |
 | `extraction.vessel_radius` | bool | `false` | Estimate vessel radius using EDT from the segmentation |
 | `extraction.junction_cleanup` | bool | `false` | Clean up ambiguous junction pixels after thinning |
