@@ -60,7 +60,7 @@ def _make_parser() -> argparse.ArgumentParser:
         "--jobs",
         "-j",
         type=int,
-        default=os.cpu_count() or 1,
+        default=1,
         help="Number of parallel workers (0 = all CPU cores).",
     )
 
