@@ -39,7 +39,7 @@ def print_row(
         )
     else:
         print(
-            f"{name:<10} {lee_t:<12} {sk_zhang_t:<12} {sk_lee_t:<12} {vv_t:<12} {str(speedup_zhang):<12} {str(speedup_lee):<12} {str(speedup_vv):<12}"
+            f"{name:<10} {lee_t:<12} {sk_zhang_t:<12} {sk_lee_t:<12} {vv_t:<12} {speedup_zhang!s:<12} {speedup_lee!s:<12} {speedup_vv!s:<12}"
         )
 
 
@@ -64,7 +64,7 @@ def main():
     lee_times, sk_zhang_times, sk_lee_times, vv_times = [], [], [], []
 
     for i in range(len(ds)):
-        img, seg, mask, info = ds.load_sample(i)
+        _, seg, mask, info = ds.load_sample(i)
         cleaned = preprocess_segmentation(seg, mask)
 
         t0 = time.perf_counter()

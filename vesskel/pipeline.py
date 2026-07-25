@@ -32,7 +32,7 @@ class AnalysisResult:
     """Container for single-image analysis outputs."""
 
     skeleton: np.ndarray
-    layers: list["napari.types.LayerDataTuple"]  # noqa: F821
+    layers: list["napari.types.LayerDataTuple"]  # noqa: F821, UP037
     summary_features: dict[str, float]
     branch_records: list[dict[str, object]]
     node_records: list[dict[str, object]]

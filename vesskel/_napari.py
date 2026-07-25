@@ -58,7 +58,7 @@ class VesselAnalysisWidget(Container):
     def _setup_ui(self):
         # ---------- extraction parameters (magicgui) ----------
         def _extraction_params(
-            image: "napari.layers.Image",  # noqa: F821
+            image: "napari.layers.Image",  # noqa: F821, UP037
             extract_branches: bool = False,
             branch_color_property: str = "tortuosity",
             extract_branch_text: bool = False,
@@ -541,7 +541,7 @@ class VesselAnalysisWidget(Container):
                 try:
                     layer = Layer.create(data, meta, layer_type)
                     self.viewer.add_layer(layer)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     show_info(
                         f"Failed to add layer {meta.get('name', '<unnamed>')}: {e}"
                     )

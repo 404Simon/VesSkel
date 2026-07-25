@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
 from PIL import Image
@@ -16,7 +17,11 @@ class HRFDataset:
     Each has: fundus image (images/), manual segmentation (manual1/), FOV mask (mask/).
     """
 
-    PHENOTYPES = {"h": "healthy", "dr": "diabetic_retinopathy", "g": "glaucoma"}
+    PHENOTYPES: ClassVar[dict[str, str]] = {
+        "h": "healthy",
+        "dr": "diabetic_retinopathy",
+        "g": "glaucoma",
+    }
 
     def __init__(self, hrf_path: str):
         self.hrf_path = Path(hrf_path)

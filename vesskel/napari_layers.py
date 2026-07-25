@@ -265,7 +265,7 @@ def _extract_node_features_layer(
 
     props = {
         k: [r[k] for r in node_records]
-        for k in node_records[0].keys()
+        for k in node_records[0]
         if not k.startswith("coord_")
     }
 

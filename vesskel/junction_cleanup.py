@@ -87,7 +87,7 @@ def collapse_triangle_junctions(
     try:
         G_simple = nx.Graph(G)
         cycles = nx.cycle_basis(G_simple)
-    except Exception:
+    except Exception:  # noqa: BLE001
         return skeleton.copy().astype(np.uint8)
 
     if not cycles:

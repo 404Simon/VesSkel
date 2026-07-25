@@ -205,7 +205,7 @@ class TestExtractSkeletonLayers:
             config=ExtractionConfig(branches=True, summary=True),
             features=features,
         )
-        branch_layer = [layer for layer in layers if layer[2] == "shapes"][0]
+        branch_layer = next(layer for layer in layers if layer[2] == "shapes")
         props = branch_layer[1]["properties"]
         assert len(props) > 0
 

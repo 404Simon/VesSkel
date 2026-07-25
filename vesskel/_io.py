@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import csv
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 import itk
 import numpy as np
@@ -47,7 +47,7 @@ def write_csv(path: Path, rows: Iterable[dict[str, object]]) -> None:
     if not rows:
         return
 
-    fieldnames = sorted({key for row in rows for key in row.keys()})
+    fieldnames = sorted({key for row in rows for key in row})
     with path.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()

@@ -83,7 +83,8 @@ class TestSaveAnalysisOutputs:
     def test_saves_branch_csv(self, tmp_path):
         cfg = OutputConfig(write_branch_csv=True)
         save_analysis_outputs(tmp_path, "img", self._result(branches=True), cfg)
-        rows = list(csv.DictReader(open(tmp_path / "img" / "img_branches.csv")))
+        with open(tmp_path / "img" / "img_branches.csv") as f:
+            rows = list(csv.DictReader(f))
         assert len(rows) == 2
         assert rows[0]["id"] == "0"
 
@@ -102,7 +103,8 @@ class TestSaveAnalysisOutputs:
     def test_saves_node_csv(self, tmp_path):
         cfg = OutputConfig(write_node_csv=True)
         save_analysis_outputs(tmp_path, "img", self._result(nodes=True), cfg)
-        rows = list(csv.DictReader(open(tmp_path / "img" / "img_nodes.csv")))
+        with open(tmp_path / "img" / "img_nodes.csv") as f:
+            rows = list(csv.DictReader(f))
         assert len(rows) == 2
         assert rows[0]["deg"] == "2"
 
@@ -141,7 +143,8 @@ class TestSaveAnalysisOutputs:
         save_analysis_outputs(
             tmp_path, "img", self._result(summary=True), OutputConfig()
         )
-        rows = list(csv.DictReader(open(tmp_path / "img" / "img_summary.csv")))
+        with open(tmp_path / "img" / "img_summary.csv") as f:
+            rows = list(csv.DictReader(f))
         assert len(rows) == 1
         assert rows[0]["image"] == "img"
         assert rows[0]["n_branches"] == "4.0"

@@ -41,7 +41,7 @@ class TestAnalysisResult:
             node_records=[],
         )
         assert len(result.layers) == 1
-        data, meta, lt = result.layers[0]
+        _, meta, lt = result.layers[0]
         assert isinstance(meta, dict)
         assert lt == "image"
 

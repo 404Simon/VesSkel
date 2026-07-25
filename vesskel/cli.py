@@ -167,8 +167,8 @@ def _compute_safe_names(input_paths: list[Path]) -> list[str]:
 
 
 def _run_batch(args: argparse.Namespace) -> int:
-    from vesskel._io import write_csv
     from vesskel._batch import process_one
+    from vesskel._io import write_csv
 
     config = load_pipeline_config(Path(args.config))
     input_paths = _discover_input_paths(args.input, recursive=args.recursive)
@@ -239,7 +239,7 @@ def _run_parallel(
             try:
                 summary_rows.append(fut.result())
                 print(f"[{idx}/{total}] {name}", flush=True)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 print(
                     f"[{idx}/{total}] {name} FAILED: {exc}",
                     file=sys.stderr,

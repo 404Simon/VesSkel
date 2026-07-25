@@ -53,6 +53,7 @@ if heavy:
             capture_output=True,
             text=True,
             timeout=15,
+            check=False,
         )
         assert result.returncode == 0, f"Subprocess failed (stderr): {result.stderr}"
         assert "HEAVY:" not in result.stdout, (

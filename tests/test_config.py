@@ -144,11 +144,11 @@ class TestPipelineConfig:
             PipelineConfig.from_dict(data)
 
     def test_from_dict_rejects_none(self):
-        with pytest.raises(ValueError, match="must be an object"):
+        with pytest.raises(TypeError, match="must be an object"):
             PipelineConfig.from_dict(None)
 
     def test_from_dict_rejects_non_dict(self):
-        with pytest.raises(ValueError, match="must be an object"):
+        with pytest.raises(TypeError, match="must be an object"):
             PipelineConfig.from_dict(["not", "a", "dict"])
 
     def test_from_dict_rejects_non_dict_extraction(self):
@@ -157,7 +157,7 @@ class TestPipelineConfig:
             "extraction": "bad",
             "output": {},
         }
-        with pytest.raises(ValueError, match="'extraction' must be an object"):
+        with pytest.raises(TypeError, match="'extraction' must be an object"):
             PipelineConfig.from_dict(data)
 
     def test_from_dict_rejects_non_dict_output(self):
@@ -166,7 +166,7 @@ class TestPipelineConfig:
             "extraction": {},
             "output": 123,
         }
-        with pytest.raises(ValueError, match="'output' must be an object"):
+        with pytest.raises(TypeError, match="'output' must be an object"):
             PipelineConfig.from_dict(data)
 
     def test_from_dict_missing_schema_version_defaults(self):

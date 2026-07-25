@@ -126,7 +126,7 @@ class PipelineConfig:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PipelineConfig:
         if not isinstance(data, dict):
-            raise ValueError("Config JSON must be an object")
+            raise TypeError("Config JSON must be an object")
 
         _warn_unknown_keys({"schema_version", "extraction", "output"}, data)
 
@@ -141,9 +141,9 @@ class PipelineConfig:
         output_data = data.get("output", {})
 
         if not isinstance(extraction_data, dict):
-            raise ValueError("'extraction' must be an object")
+            raise TypeError("'extraction' must be an object")
         if not isinstance(output_data, dict):
-            raise ValueError("'output' must be an object")
+            raise TypeError("'output' must be an object")
 
         return cls(
             extraction=ExtractionConfig.from_dict(extraction_data),

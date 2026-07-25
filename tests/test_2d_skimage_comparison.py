@@ -17,7 +17,7 @@ class TestSkimageComparison2D:
     @pytest.fixture(scope="class")
     def sample_data(self):
         ds = HRFDataset(HRF_PATH)
-        _, seg, mask, info = ds.load_sample(0)
+        _, seg, mask, _ = ds.load_sample(0)
         cleaned = preprocess_segmentation(seg, mask)
         return cleaned
 

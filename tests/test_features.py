@@ -48,7 +48,7 @@ class TestFractalDimension:
 
     def test_filled_2d_square(self):
         img = np.ones((64, 64), dtype=np.uint8)
-        fd, r2 = fractal_dimension(img)
+        fd, _ = fractal_dimension(img)
         assert fd > 1.5
 
     def test_straight_3d_line(self):

@@ -30,7 +30,7 @@ def print_row(name, lee_t, sk_lee_t, vv_t, speedup_sk=None, speedup_vv=None):
         )
     else:
         print(
-            f"{name:<10} {lee_t:<16} {sk_lee_t:<16} {vv_t:<16} {str(speedup_sk):<12} {str(speedup_vv):<12}"
+            f"{name:<10} {lee_t:<16} {sk_lee_t:<16} {vv_t:<16} {speedup_sk!s:<12} {speedup_vv!s:<12}"
         )
 
 

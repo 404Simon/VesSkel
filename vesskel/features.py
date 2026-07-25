@@ -347,7 +347,7 @@ def extract_vessel_features(
     edge_nodes = np.concatenate((src_nodes, dst_nodes))
     unique_nodes = np.unique(edge_nodes)
 
-    num_edges = int(len(branch_data))
+    num_edges = len(branch_data)
     num_nodes = int(unique_nodes.size)
 
     max_node_id = int(np.max(unique_nodes))
