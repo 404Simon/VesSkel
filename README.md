@@ -1,5 +1,10 @@
 # VesSkel
 
+[![DOI](https://zenodo.org/badge/1198768258.svg)](https://doi.org/10.5281/zenodo.21550587)
+[![PyPI version](https://img.shields.io/pypi/v/vesskel.svg)](https://pypi.org/project/vesskel/)
+[![Python version](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 Vessel Skeletonization and Graph-Based Phenotype Analysis in Retinal Fundus Images
 
 ## Installation
@@ -142,3 +147,13 @@ Binary gold standard vessel segmentation images and field of view (FOV) masks ar
 The HRF dataset is released under the **Creative Commons 4.0 Attribution License**.
 
 For more information, visit the [HRF Image Database](https://www5.cs.fau.de/research/data/fundus-images/).
+
+## Citation
+
+If you use VesSkel in your research, please cite the Zenodo release:
+
+> Wittmann, S. (2026). 404Simon/VesSkel: 5.1.0 (Version 5.1.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21550587
+
+## License
+
+VesSkel is released under the **MIT License**. See [LICENSE](LICENSE) for details.

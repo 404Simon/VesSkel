@@ -17,6 +17,12 @@ dependencies = [
     "skan>=0.13.1",
 ]
 
+[project.urls]
+Homepage = "https://github.com/404Simon/VesSkel"
+Repository = "https://github.com/404Simon/VesSkel"
+Documentation = "https://github.com/404Simon/VesSkel#readme"
+Changelog = "https://github.com/404Simon/VesSkel/releases"
+
 [project.optional-dependencies]
 napari = [
     "napari[all]",
