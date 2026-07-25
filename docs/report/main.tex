@@ -28,31 +28,31 @@ Biomedical Engineering, Friedrich-Alexander-Universität Erlangen-Nürnberg}
 \maketitle
 
 \begin{abstract}
-  Quantitative analysis of vascular morphology from biomedical images
-  provides clinically relevant biomarkers for diseases including
-  diabetic retinopathy and glaucoma.   A common
-  approach~\cite{skel_survey} extracts these biomarkers by
-  skeletonizing binary vessel segmentations and deriving graph-based
-  features from the resulting centerline representation. However,
-  this workflow requires assembling heterogeneous tools that differ
-  in license, supported dimensionality, interface, and feature scope
-  --- a fragmented process that introduces reproducibility risks and
-  undermines quantitative rigor. To address this, we present VesSkel,
-  an open-source-licensed Python package that unifies skeletonization,
-  artifact removal, and phenotype feature extraction in a single
-  end-to-end pipeline.   VesSkel provides a Numba-parallelized Lee94
-  thinning implementation that is 5--9$\times$ faster in 2D
-  (0.084\,s/image, $3504\times2336$\,px) than existing alternatives
-  while producing bit-identical output, a novel junction-cleanup step
-  that removes thinning-induced triangle artifacts, and dual napari
-  and CLI interfaces with fully serializable JSON configuration for
-  reproducible batch processing.  From each image, VesSkel extracts
-  29 per-image features spanning topology, morphology, and density.
-  On the High-Resolution Fundus dataset, an SVM trained on
-  ANOVA-selected VesSkel features achieves 91.1\% accuracy in
-  discriminating healthy, diabetic retinopathy, and glaucoma subjects,
-  confirming that its features encode biologically relevant vascular
-  phenotypes.
+  Quantitative analysis of network-like structures in biomedical
+  images provides valuable morphological descriptors for a wide range
+  of biological and clinical applications, including vascular
+  analysis, neuronal morphology and filamentous tissue
+  characterization. The standard workflow -- skeletonizing binary
+  vessel segmentations to derive graph-based features -- requires
+  assembling heterogeneous tools differing in license, dimensionality
+  support, and interface, introducing reproducibility risks. To
+  address this, we present VesSkel, an open-source-licensed Python
+  package that unifies skeletonization, artifact removal, and
+  phenotype feature extraction in a single end-to-end pipeline.
+  VesSkel provides a Numba-parallelized Lee94 thinning implementation
+  that is 5--9$\times$ faster in 2D (0.084\,s/image,
+  $3504\times2336$\,px) and 1.8--2.0$\times$ faster in 3D
+  (16.77\,s/image, $\sim430\times512\times512$\,voxels) than existing
+  alternatives while producing bit-identical output, a novel
+  junction-cleanup step that removes thinning-induced triangle
+  artifacts, and dual napari and CLI interfaces with fully
+  serializable JSON configuration for reproducible batch processing.
+  From each image, VesSkel extracts 29 per-image features spanning
+  topology, morphology, and density. On the High-Resolution Fundus
+  dataset, an SVM trained on ANOVA-selected VesSkel features achieves
+  91.1\% accuracy in discriminating healthy, diabetic retinopathy,
+  and glaucoma subjects, confirming that its features encode
+  biologically relevant vascular phenotypes.
 \end{abstract}
 
 \clearpage
@@ -394,7 +394,7 @@ VesselVio's Lee94 (0.796~s) the speedup reaches 9.46$\times$.
   \caption{2D thinning benchmark on the HRF dataset (45 images).}
   \label{tab:perf-2d}
   \small
-  \begin{tabularx}{0.7\linewidth}{lcc}
+  \begin{tabularx}{0.5\linewidth}{lcc}
     \toprule
     Implementation & Mean time (s) & vs.\ VesSkel \\
     \midrule
@@ -406,24 +406,26 @@ VesselVio's Lee94 (0.796~s) the speedup reaches 9.46$\times$.
   \end{tabularx}
 \end{table}
 
-For 3D evaluation we used a binarized vessel segmentation volume from
-VesSAP~\cite{VesSAP} ($600\times304\times325$~voxels). Mean times
-over 10 runs are shown in Table~\ref{tab:perf-3d}.~VesSkel (0.730~s)
-is competitive with scikit-image (1.024~s) and VesselVio (0.804~s).
+For 3D evaluation we used 20 lung CT masks from the VESSEL12
+challenge (~$430\times512\times512$~voxels, $\sim$12\% mean
+foreground fraction). Per-scan thinning times are shown in
+Table~\ref{tab:perf-3d}.~VesSkel achieves a mean of 16.77~s,
+outperforming scikit-image Lee (30.25~s, 1.80$\times$) and
+VesselVio~Lee94 (33.97~s, 2.03$\times$).
 
 \begin{table}[htb]
   \centering
-  \caption{3D thinning benchmark on the VesSAP test volume
-  ($600\times304\times325$).}
+  \caption{3D thinning benchmark on the VESSEL12 lung CT dataset
+  (20 scans).}
   \label{tab:perf-3d}
   \small
-  \begin{tabularx}{0.7\linewidth}{lcc}
+  \begin{tabularx}{0.5\linewidth}{lcc}
     \toprule
     Implementation & Mean time (s) & vs.\ VesSkel \\
     \midrule
-    VesSkel (Lee94)   & 0.730 & ---   \\
-    skimage Lee       & 1.024 & 1.40$\times$ slower \\
-    VesselVio Lee94   & 0.804 & 1.10$\times$ slower \\
+    VesSkel (Lee94)   & 16.77 & ---   \\
+    skimage Lee       & 30.25 & 1.80$\times$ slower \\
+    VesselVio Lee94   & 33.97 & 2.03$\times$ slower \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -434,16 +436,11 @@ This was verified via the regression test suite described in
 Section~\ref{sec:methods:impl:tests}.
 
 Beyond per-image thinning, the \texttt{vesskel run} CLI supports
-parallel batch processing. On our test machine, processing all 45
-HRF images took 166.7~s with a single worker and 103.7~s with 12
-workers (1.61$\times$ speedup).
-
-This sub-linear speedup probably stems from the heterogeneous CPU
-architecture of our test-machine (only 2 Performance-cores and 8
-Efficiency-cores) and the fact that Numba already parallelizes the
-thinning of each individual image, so multi-worker gains are
-partially offset by inter-process contention. On homogeneous
-multi-core workstations, the speedup may approach the worker count more closely.
+parallel batch processing. On a 12-core homogeneous workstation,
+processing all 20 VESSEL12 scans took 4:53.63~min with a single
+worker and 3:28.94~min with 12 workers (1.41$\times$ speedup, 1153\%
+CPU utilization). The sub-linear speedup occurs because we already
+parallelize the thinning of each individual image using Numba.
 
 \subsection{Skeleton and Graph Features}\label{sec:results:features}
 
@@ -550,9 +547,11 @@ Mask-level preprocessing (hole filling) proved more effective than
 graph-level junction cleanup for removing skeletonization artifacts.
 Our proof of Euler invariant redundancy in 2D Lee94 thinning
 simplified the implementation and contributed to the measured
-speedups. The 3D Lee94 implementation, while competitive, leaves room
-for improvement: a wavefront-based parallel deletion scheme could
-reduce the sequential bottleneck in the removal phase.
+speedups. On the VESSEL12 lung CT benchmark, VesSkel achieved
+consistent 1.8--2.0$\times$ speedups over skimage and VesselVio,
+demonstrating effective 3D performance on clinically representative
+volumes. A wavefront-based parallel deletion scheme could further
+reduce the sequential bottleneck in the 3D removal phase.
 
 The main limitations are the small single-dataset evaluation (HRF, 45
 images), the lack of 3D phenotype validation, and the cross-sectional
@@ -873,11 +872,14 @@ conditions are known to alter retinal vessel
 morphology~\cite{popovic_regional_2019}, providing a
 suitable test bed for phenotype analysis.
 
-For 3D benchmarking, we use a test volume from the VesSAP
-Repository~\cite{VesSAP} ($600\times304\times325$~voxels). The raw
-volume was preprocessed by applying a median filter with radii $(x,
-y, z) = (1, 1, 0)$, followed by Li thresholding to obtain a binary
-vessel mask. We also use the scikit-image brain volume~\cite{skimage}.
+For 3D benchmarking, we use 20 lung CT angiography masks from the
+VESSEL12 challenge. Each scan is a binary lung mask
+derived from a thoracic CT volume, with dimensions approximately
+$400\times512\times512$~voxels and a mean foreground fraction of
+approximately 12\%. The masks were preprocessed with hole filling
+(maximum hole size 100~voxels) and one iteration of morphological
+closing before thinning. We also use the scikit-image brain
+volume~\cite{skimage} for correctness verification.
 
 Preprocessing follows the procedure described in
 Section~\ref{sec:results:cleanup}. Binary vessel masks are first
@@ -890,21 +892,17 @@ segmentations contain few gaps.
 
 \paragraph{Runtime Tests}\label{sec:methods:setup:runtime}
 
-All benchmarks were run on a notebook equipped with an Intel Core
+2D benchmarks were run on a notebook equipped with an Intel Core
 i5-1235U (12 cores: 2 P-cores, 8 E-cores; 16~GB RAM) running Arch
-Linux (kernel 7.0.12).~Times were measured with
-\texttt{time.perf\_counter} with Numba's JIT compiler warmed up on a
-synthetic $10\times10$ (2D) or $10\times10\times10$ (3D) binary cube
-before timing.
+Linux (kernel 7.0.12). 3D benchmarks and parallel batch processing
+were run on a computer equipped with an AMD Ryzen 5 1600 (6
+homogenous cores, 12 Threads, 32~GB RAM) running Nix OS (kernel
+6.18.38) to avoid thermal throttling and
+heterogeneous CPU effects.
 
-For parallel batch processing, the \texttt{vesskel run} CLI exposes a
-\texttt{-{}-jobs} (\texttt{-j}) flag that defaults to the number of
-available CPU cores.~Each worker processes one image independently
-using a shared Numba JIT cache, so inter-process I/O is the primary
-overhead.~The sub-linear speedup on our test machine (1.61$\times$ with
-12 workers) reflects the hybrid CPU architecture (2 P-cores, 8
-E-cores); on homogeneous multi-core workstations the speedup approaches
-the worker count more closely.
+Times were measured with \texttt{time.perf\_counter} with Numba's JIT
+compiler warmed up on a synthetic $10\times10$ (2D) or
+$10\times10\times10$ (3D) binary cube before timing.
 
 \paragraph{Phenotype Differentiation}\label{sec:methods:setup:phenodiff}
 
@@ -955,13 +953,12 @@ $\text{solver} \in \{\text{lbfgs}, \text{newton-cg}, \text{sag},
 The High-Resolution Fundus (HRF) dataset~\cite{HRF} is publicly
 available at
 \url{https://www5.cs.fau.de/research/data/fundus-images/} under the
-CC-BY 4.0 license. The VesSAP test volume~\cite{VesSAP} was
-downloaded from
-\url{https://github.com/vessap/vessap/blob/master/data/1.nii.gz}. The
+CC-BY 4.0 license. The VESSEL12 lung CT dataset is
+available at \url{https://zenodo.org/records/8055066}. The
 scikit-image brain volume~\cite{skimage} is bundled with the
 scikit-image library. All derived data (skeleton baselines, feature
-CSV files and the binarized VesSAP 3D Test-Volume) are included in
-the VesSkel repository under \texttt{tests/}.
+CSV files and preprocessed binary masks) are included in the VesSkel
+repository under \texttt{tests/}.
 
 \printbibliography
 
@@ -1001,6 +998,8 @@ prediction task, obtained via stratified 5-fold cross-validation.}
 \caption{SVM classification accuracy as a function of the number of
 selected features $k$ (ANOVA F-statistic).} \label{fig:svm-k-sweep}
 \end{figure}
+
+\clearpage
 
 \section{Supplementary tables}\label{appendic:tables}
 
