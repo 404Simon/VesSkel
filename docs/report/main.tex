@@ -154,7 +154,7 @@ implementations; (2)~an integrated feature extraction pipeline with a
 novel junction artifact cleanup mechanism; (3)~a dual-interface
 design (napari plugin + CLI) with JSON-configurable reproducibility;
 and (4)~a demonstration of phenotype differentiation and
-classification on the HRF dataset. The remainder of this paper is
+classification on the HRF dataset. The remainder of this report is
 organized as follows. Section~\ref{sec:results} presents the pipeline
 overview, skeletonization performance, feature summary, and phenotype
 analysis results. Section~\ref{sec:discussion} discusses limitations
@@ -436,7 +436,7 @@ This was verified via the regression test suite described in
 Section~\ref{sec:methods:impl:tests}.
 
 Beyond per-image thinning, the \texttt{vesskel run} CLI supports
-parallel batch processing. On a 12-core homogeneous workstation,
+parallel batch processing. On a 12-thread homogeneous workstation,
 processing all 20 VESSEL12 scans took 4:53.63~min with a single
 worker and 3:28.94~min with 12 workers (1.41$\times$ speedup, 1153\%
 CPU utilization). The sub-linear speedup occurs because we already
@@ -518,11 +518,11 @@ stacking ensembles (both 84.4\%), and random forest (82.2\%)
 (\Cref{fig:model-comparison}).
 
 \begin{figure}[htb]
-\centering
-\includegraphics[width=0.6\linewidth]{figures/final_model_comparison.pdf}
-\caption{Classification performance (mean accuracy $\pm$~SD) across
-five models with stratified 5-fold cross-validation on the HRF dataset.}
-\label{fig:model-comparison}
+  \centering
+  \includegraphics[width=0.6\linewidth]{figures/final_model_comparison.pdf}
+  \caption{Classification performance (mean accuracy $\pm$~SD) across
+  five models with stratified 5-fold cross-validation on the HRF dataset.}
+  \label{fig:model-comparison}
 \end{figure}
 
 Confusion matrices for each classifier are shown in the appendix
@@ -777,19 +777,19 @@ and all elementary cycles $\mathcal{C}$ are enumerated using
 (v_1, \dots, v_n)
 \in \mathcal{C}$ with $v_{n+1} = v_1$, the perimeter is
 \[
-P(c) = \sum_{i=1}^{n} \lVert \operatorname{pos}(v_{i+1}) -
-\operatorname{pos}(v_i) \rVert_2
+  P(c) = \sum_{i=1}^{n} \lVert \operatorname{pos}(v_{i+1}) -
+  \operatorname{pos}(v_i) \rVert_2
 \]
 and the local vessel diameter is estimated as
 \[
-D(c) = \frac{2}{n} \sum_{i=1}^{n}
-\operatorname{EDT}(\operatorname{pos}(v_i)),
+  D(c) = \frac{2}{n} \sum_{i=1}^{n}
+  \operatorname{EDT}(\operatorname{pos}(v_i)),
 \]
 where $\operatorname{pos}(v)$ gives the pixel coordinates of node $v$
 and $\operatorname{EDT}$ is the Euclidean distance transform of the
 vessel mask. A cycle is classified as an artifact if
 \[
-P(c) < \tau \cdot D(c)
+  P(c) < \tau \cdot D(c)
 \]
 with a default threshold of $\tau = 2.5$. Each such cycle --- or
 connected group of overlapping cycles --- is collapsed to a single
@@ -843,7 +843,7 @@ of this fit quantifies the quality of the power-law approximation.
 The hyphal growth unit (HGU) is computed as the ratio of total vessel
 length to endpoint count,
 \[
-\mathrm{HGU} = \frac{L_\text{total}}{N_\text{endpoints}},
+  \mathrm{HGU} = \frac{L_\text{total}}{N_\text{endpoints}},
 \]
 representing the average branch length per terminal segment. Vascular
 coverage is quantified by two additional features: \texttt{vessel\_area},
@@ -980,52 +980,52 @@ repository under \texttt{tests/}.
 \section{Supplementary figures}\label{appendix:figures}
 
 \begin{figure}[htb]
-\centering
-\includegraphics[width=0.85\linewidth]{figures/correlation_heatmap.pdf}
-\caption{Spearman correlation heatmap of the 29 per-image summary
-features across the HRF dataset.}
-\label{fig:correlation-heatmap}
+  \centering
+  \includegraphics[width=0.85\linewidth]{figures/correlation_heatmap.pdf}
+  \caption{Spearman correlation heatmap of the 29 per-image summary
+  features across the HRF dataset.}
+  \label{fig:correlation-heatmap}
 \end{figure}
 
 \begin{figure}[htb]
-\centering
-\includegraphics[width=\linewidth]{figures/individual_confusion_matrices.pdf}
-\caption{Confusion matrices for the three individual classifiers
-  (random forest, SVM, logistic regression) on the HRF phenotype
-prediction task, obtained via stratified 5-fold cross-validation.}
-\label{fig:confusion-matrices}
+  \centering
+  \includegraphics[width=\linewidth]{figures/individual_confusion_matrices.pdf}
+  \caption{Confusion matrices for the three individual classifiers
+    (random forest, SVM, logistic regression) on the HRF phenotype
+  prediction task, obtained via stratified 5-fold cross-validation.}
+  \label{fig:confusion-matrices}
 \end{figure}
 
 \begin{figure}[htb]
-\centering
-\includegraphics[width=0.85\linewidth]{figures/svm_k_sweep.pdf}
-\caption{SVM classification accuracy as a function of the number of
-selected features $k$ (ANOVA F-statistic).} \label{fig:svm-k-sweep}
+  \centering
+  \includegraphics[width=0.85\linewidth]{figures/svm_k_sweep.pdf}
+  \caption{SVM classification accuracy as a function of the number of
+  selected features $k$ (ANOVA F-statistic).} \label{fig:svm-k-sweep}
 \end{figure}
 
 \clearpage
 
-\section{Supplementary tables}\label{appendic:tables}
+\section{Supplementary tables}\label{appendix:tables}
 
 \input{../../tables/top_anova_feature_means.tex}
 
 \begin{landscape}
-\footnotesize\setlength{\tabcolsep}{3pt}
-\begin{longtable}{p{4.5cm} p{8cm} *{7}{>{\centering\arraybackslash}p{1.3cm}}}
-  \caption{Feature comparison of selected analysis tools.}
-  \label{tab:feature-comparison}\\
-  \toprule
-  \featcompheader \\
-  \midrule
-  \endfirsthead
-  \toprule
-  \featcompheader \\
-  \midrule
-  \endhead
-  \bottomrule
-  \endfoot
-  \input"| python3 gen_feature_csv.py"
-\end{longtable}
+  \footnotesize\setlength{\tabcolsep}{3pt}
+  \begin{longtable}{p{4.5cm} p{8cm} *{7}{>{\centering\arraybackslash}p{1.3cm}}}
+    \caption{Feature comparison of selected analysis tools.}
+    \label{tab:feature-comparison}\\
+    \toprule
+    \featcompheader \\
+    \midrule
+    \endfirsthead
+    \toprule
+    \featcompheader \\
+    \midrule
+    \endhead
+    \bottomrule
+    \endfoot
+    \input"| python3 gen_feature_csv.py"
+  \end{longtable}
 \end{landscape}
 
 \clearpage
@@ -1041,105 +1041,106 @@ DeepL, Google Translate, Perplexity, Elicit, Explainpaper, and
 ResearchRabbit. Example sentences:
 
 \begin{itemize}
-\item Task: Review and editing of the text: \textit{``I used
-    Grammarly for proofreading, revising the grammar of the text in
-    \Cref{sec:introduction,sec:discussion}, and for rewording
-  convoluted sentences throughout this work.''}
-\item Task: Structuring and planning the text: \textit{``I used
-    Claude to suggest how my background description in
-  \Cref{sec:introduction} should be structured and what should be included.''}
-\item Task: Coding: \textit{``I used the Microsoft Copilot
-    extension in my IDE for code completion and for generating the
-  code for the JavaScript frontend.''}
+  \item Task: Review and editing of the text: \textit{``I used
+      Grammarly for proofreading, revising the grammar of the text in
+      \Cref{sec:introduction,sec:discussion}, and for rewording
+    convoluted sentences throughout this work.''}
+  \item Task: Structuring and planning the text: \textit{``I used
+      Claude to suggest how my background description in
+    \Cref{sec:introduction} should be structured and what should be included.''}
+  \item Task: Coding: \textit{``I used the Microsoft Copilot
+      extension in my IDE for code completion and for generating the
+    code for the JavaScript frontend.''}
 \end{itemize}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Brainstorming and concept development}
-\textit{``I used opencode (with DeepSeek Models), Gemini, and ChatGPT for
-  brainstorming, refining research goals, and developing the project
-scope and concept throughout all stages of this work.''}
+  \textit{``I used opencode (with DeepSeek Models), Gemini, and ChatGPT for
+    brainstorming, refining research goals, and developing the project
+  scope and concept throughout all stages of this work.''}
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Literature review and analysis}
-\textit{``I used ResearchRabbit to identify and explore relevant literature.''}
+  \textit{``I used ResearchRabbit to identify and explore relevant
+  literature.''}
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Methodology}
-\textit{``I used opencode (with DeepSeek Models), Gemini, and ChatGPT
-  to discuss, evaluate, and refine the methodological approach.
-  opencode was particularly valuable because it had full context of the
-  codebase, enabling informed discussions about implementation
-strategies and trade-offs.''}
+  \textit{``I used opencode (with DeepSeek Models), Gemini, and ChatGPT
+    to discuss, evaluate, and refine the methodological approach.
+    opencode was particularly valuable because it had full context of the
+    codebase, enabling informed discussions about implementation
+  strategies and trade-offs.''}
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Coding}
-\textit{``The VesSkel package was developed with the help of opencode
-  (with DeepSeek Models). For the analysis and classification
-  notebooks, I used GitHub Copilot for code completion and assistance.
-  I also used Copilot to review pull requests and suggest fixes and
-improvements.''}
+  \textit{``The VesSkel package was developed with the help of opencode
+    (with DeepSeek Models). For the analysis and classification
+    notebooks, I used GitHub Copilot for code completion and assistance.
+    I also used Copilot to review pull requests and suggest fixes and
+  improvements.''}
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Data collection, generation, and analysis}
-\textit{``I used GitHub Copilot for data processing, feature
-extraction, and the phenotype classification analysis.''}
+  \textit{``I used GitHub Copilot for data processing, feature
+  extraction, and the phenotype classification analysis.''}
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Interpretation and validation}
-\textit{``I used GitHub Copilot for interpreting ANOVA results, model
-comparison outputs, and validating the classification findings.''}
+  \textit{``I used GitHub Copilot for interpreting ANOVA results, model
+  comparison outputs, and validating the classification findings.''}
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Structuring and planning the text}
-\textit{``I used opencode (with DeepSeek Models), Gemini, and ChatGPT
-  to plan the structure of the report and outline the flow of
-individual sections.''}
+  \textit{``I used opencode (with DeepSeek Models), Gemini, and ChatGPT
+    to plan the structure of the report and outline the flow of
+  individual sections.''}
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Text generation}
-\textit{``I used opencode (with DeepSeek Models), Gemini, and ChatGPT
-to draft and refine textual content across various sections of the report.''}
+  \textit{``I used opencode (with DeepSeek Models), Gemini, and ChatGPT
+  to draft and refine textual content across various sections of the report.''}
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Translating text}
-\textit{``I did not use any AI tools for this task.''}
+  \textit{``I did not use any AI tools for this task.''}
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Review and editing of the text}
-\textit{``I used opencode (with DeepSeek Models) and Gemini for
-  proofreading, revising grammar, rewording convoluted sentences, and
-critically reviewing the manuscript content.''}
+  \textit{``I used opencode (with DeepSeek Models) and Gemini for
+    proofreading, revising grammar, rewording convoluted sentences, and
+  critically reviewing the manuscript content.''}
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Bibliography management}
-\textit{``I did not use any AI tools for this task.''}
+  \textit{``I did not use any AI tools for this task.''}
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Other activities}
-\textit{``I did not use any AI tools for this task.''}
+  \textit{``I did not use any AI tools for this task.''}
 \end{answerbox}
 
 \clearpage
