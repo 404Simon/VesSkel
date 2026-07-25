@@ -1,7 +1,7 @@
 [project]
 name = "vesskel"
 license = "MIT"
-version = "5.0.0"
+version = "5.1.0"
 description = "2D and 3D Skeletonization and Graph-based Analysis"
 readme = "README.md"
 requires-python = ">=3.13"
