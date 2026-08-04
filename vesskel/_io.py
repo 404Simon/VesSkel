@@ -11,6 +11,7 @@ import numpy as np
 from PIL import Image
 
 from vesskel.config import OutputConfig
+from vesskel.graphml import write_graphml
 from vesskel.pipeline import AnalysisResult
 
 
@@ -113,6 +114,19 @@ def save_analysis_outputs(
 
     if config.write_radius and result.radius_matrix is not None:
         save_radius(out / f"{base_name}_radius", result.radius_matrix)
+
+    if (
+        config.write_graphml
+        and result.graph is not None
+        and result.branch_data is not None
+    ):
+        write_graphml(
+            result.graph,
+            result.branch_data,
+            out / f"{base_name}_graph.graphml",
+            summary_features=result.summary_features,
+            radius_matrix=result.radius_matrix,
+        )
 
     if config.write_branch_csv and result.branch_records:
         write_csv(out / f"{base_name}_branches.csv", result.branch_records)

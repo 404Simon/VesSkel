@@ -90,6 +90,7 @@ class OutputConfig:
     write_branch_csv: bool = False
     write_node_csv: bool = False
     write_radius: bool = False
+    write_graphml: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -99,6 +100,7 @@ class OutputConfig:
             "write_branch_csv": self.write_branch_csv,
             "write_node_csv": self.write_node_csv,
             "write_radius": self.write_radius,
+            "write_graphml": self.write_graphml,
         }
 
     @classmethod

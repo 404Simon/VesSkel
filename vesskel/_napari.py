@@ -134,6 +134,7 @@ class VesselAnalysisWidget(Container):
             write_branch_csv: bool = False,
             write_node_csv: bool = False,
             write_radius: bool = False,
+            write_graphml: bool = False,
         ) -> None:
             return None
 
@@ -320,12 +321,16 @@ class VesselAnalysisWidget(Container):
 
         self.extract_nodes_widget.changed.connect(_on_nodes_toggle_write_node_csv)
 
+        self.write_graphml_widget = output_gui.write_graphml
+        self.write_graphml_widget.label = "Write graph (.graphml)"
+
         output_group.append(self.write_skeleton_npy_widget)
         output_group.append(self.write_skeleton_png_widget)
         output_group.append(self.write_summary_csv_widget)
         output_group.append(self.write_branch_csv_widget)
         output_group.append(self.write_node_csv_widget)
         output_group.append(self.write_radius_widget)
+        output_group.append(self.write_graphml_widget)
 
         # ============================================================
         # Output Directory
@@ -400,6 +405,7 @@ class VesselAnalysisWidget(Container):
                 write_branch_csv=self.write_branch_csv_widget.value,
                 write_node_csv=self.write_node_csv_widget.value,
                 write_radius=self.write_radius_widget.value,
+                write_graphml=self.write_graphml_widget.value,
             ),
         )
 
@@ -426,6 +432,7 @@ class VesselAnalysisWidget(Container):
         self.write_branch_csv_widget.value = o.write_branch_csv
         self.write_node_csv_widget.value = o.write_node_csv
         self.write_radius_widget.value = o.write_radius
+        self.write_graphml_widget.value = o.write_graphml
 
     # ------------------------------------------------------------------
     # Actions
