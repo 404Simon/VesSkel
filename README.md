@@ -42,6 +42,7 @@ CLI outputs:
 - Optional per-image skeleton outputs (default: `.npy`)
 - Optional per-image branch tables when `output.write_branch_csv=true`
 - Optional per-image node tables when `output.write_node_csv=true`
+- Optional per-image skeleton graphs when `output.write_graphml=true`
 
 ## Configuration
 
@@ -71,7 +72,8 @@ Extraction and output settings are defined in a JSON config file (e.g. the one e
     "write_summary_csv": true,
     "write_branch_csv": false,
     "write_node_csv": false,
-    "write_radius": false
+    "write_radius": false,
+    "write_graphml": false
   }
 }
 ```
@@ -97,6 +99,7 @@ Extraction and output settings are defined in a JSON config file (e.g. the one e
 | `output.write_branch_csv` | bool | `false` | Write per-branch CSV tables (requires `extraction.branches`) |
 | `output.write_node_csv` | bool | `false` | Write per-node CSV tables (requires `extraction.nodes`) |
 | `output.write_radius` | bool | `false` | Write per-pixel radius matrix as `.npy` (requires `extraction.vessel_radius`) |
+| `output.write_graphml` | bool | `false` | Write skeleton graph as `.graphml` per image (nodes = graph nodes, edges = branches) |
 
 ### Shell completions
 
