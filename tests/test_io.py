@@ -4,6 +4,7 @@ import csv
 
 import numpy as np
 import pytest
+from skan import Skeleton, summarize
 
 from vesskel._io import save_analysis_outputs
 from vesskel.config import OutputConfig
@@ -220,3 +221,35 @@ class TestSaveAnalysisOutputs:
         d = tmp_path / "my img"
         assert d.is_dir()
         assert (d / "my img_skeleton.npy").exists()
+
+    # -- graphml -----------------------------------------------------------
+
+    @pytest.fixture
+    def graph_result(self, cross_skel) -> AnalysisResult:
+        graph = Skeleton(cross_skel)
+        branch_data = summarize(graph, separator="-")
+        return AnalysisResult(
+            skeleton=cross_skel,
+            layers=[],
+            summary_features={"num_nodes": float(len(branch_data))},
+            branch_records=[],
+            node_records=[],
+            graph=graph,
+            branch_data=branch_data,
+            radius_matrix=np.ones_like(cross_skel, dtype=np.float64) * 2.0,
+        )
+
+    def test_saves_graphml(self, tmp_path, graph_result):
+        cfg = OutputConfig(write_graphml=True)
+        save_analysis_outputs(tmp_path, "img", graph_result, cfg)
+        assert (tmp_path / "img" / "img_graph.graphml").exists()
+
+    def test_skips_graphml_when_disabled(self, tmp_path, graph_result):
+        cfg = OutputConfig(write_graphml=False)
+        save_analysis_outputs(tmp_path, "img", graph_result, cfg)
+        assert not (tmp_path / "img" / "img_graph.graphml").exists()
+
+    def test_skips_graphml_when_graph_missing(self, tmp_path):
+        cfg = OutputConfig(write_graphml=True)
+        save_analysis_outputs(tmp_path, "img", self._result(), cfg)
+        assert not (tmp_path / "img" / "img_graph.graphml").exists()

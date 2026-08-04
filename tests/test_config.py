@@ -66,6 +66,7 @@ class TestOutputConfig:
         assert c.write_summary_csv is True
         assert c.write_branch_csv is False
         assert c.write_radius is False
+        assert c.write_graphml is False
 
     def test_round_trip_dict(self):
         original = OutputConfig(
@@ -74,6 +75,7 @@ class TestOutputConfig:
             write_summary_csv=True,
             write_branch_csv=True,
             write_radius=True,
+            write_graphml=True,
         )
         restored = OutputConfig.from_dict(original.to_dict())
         assert restored == original
