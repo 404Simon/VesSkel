@@ -25,6 +25,8 @@ from vesskel.thin import lee94_thin
 
 if TYPE_CHECKING:
     from napari.types import LayerDataTuple  # noqa: F401
+    from pandas import DataFrame
+    from skan import Skeleton
 
 
 @dataclass
@@ -38,6 +40,8 @@ class AnalysisResult:
     node_records: list[dict[str, object]]
     radius_matrix: np.ndarray | None = None
     preprocessed_binary: np.ndarray | None = None
+    graph: Skeleton | None = None
+    branch_data: DataFrame | None = None
 
 
 def preprocess_binary(
@@ -212,4 +216,6 @@ def analyze_binary_image(
         node_records=node_records,
         radius_matrix=radius_matrix,
         preprocessed_binary=preprocessed_binary,
+        graph=graph,
+        branch_data=branch_data,
     )
