@@ -1,0 +1,141 @@
+"""Tests for vesskel.graphml GraphML export."""
+
+import networkx as nx
+import numpy as np
+from skan import Skeleton
+
+from vesskel.graphml import build_networkx_graph, write_graphml
+
+
+def _junction_endpoint_count(graph: Skeleton) -> int:
+    """Number of skan nodes that are junctions or endpoints (degree != 2)."""
+    return int((graph.degrees != 2).sum())
+
+
+class TestBuildNetworkxGraph:
+    def test_nodes_are_junctions_or_endpoints(self, cross_graph):
+        graph, branch_data = cross_graph
+        G = build_networkx_graph(graph, branch_data)
+
+        assert isinstance(G, nx.MultiGraph)
+        assert G.number_of_nodes() == _junction_endpoint_count(graph)
+        assert G.number_of_edges() == len(branch_data)
+        assert all(int(graph.degrees[n]) != 2 for n in G.nodes())
+
+    def test_node_attributes(self, cross_graph):
+        graph, branch_data = cross_graph
+        G = build_networkx_graph(graph, branch_data)
+
+        node_id, data = next(iter(G.nodes(data=True)))
+        assert data["coord_0"] == int(graph.coordinates[node_id, 0])
+        assert data["coord_1"] == int(graph.coordinates[node_id, 1])
+        assert data["degree"] == int(graph.degrees[node_id])
+
+        endpoints = [data for _, data in G.nodes(data=True) if data["is_endpoint"]]
+        assert len(endpoints) >= 2
+
+    def test_node_radius_absent_without_radius_matrix(self, cross_graph):
+        graph, branch_data = cross_graph
+        G = build_networkx_graph(graph, branch_data)
+        assert all("radius" not in data for _, data in G.nodes(data=True))
+
+    def test_node_radius_sampled_when_provided(self, cross_graph, cross_skel):
+        graph, branch_data = cross_graph
+        radius_matrix = np.full(cross_skel.shape, 2.5, dtype=np.float64)
+        G = build_networkx_graph(graph, branch_data, radius_matrix=radius_matrix)
+        for node_id, data in G.nodes(data=True):
+            assert data["radius"] == 2.5
+            assert data["radius"] == float(
+                radius_matrix[tuple(graph.coordinates[node_id])]
+            )
+
+    def test_edge_attributes_and_exclusions(self, cross_graph):
+        graph, branch_data = cross_graph
+        G = build_networkx_graph(graph, branch_data)
+
+        _, _, data = next(iter(G.edges(data=True)))
+        assert "branch-distance" in data
+        assert "euclidean-distance" in data
+        assert "node-id-src" not in data
+        assert "node-id-dst" not in data
+        assert not any(k.startswith("coord-") for k in data)
+        assert not any(k.startswith("image-coord-") for k in data)
+
+    def test_parallel_branches_preserved(self, loop_graph):
+        graph, branch_data = loop_graph
+        pairs = list(zip(branch_data["node-id-src"], branch_data["node-id-dst"]))
+        assert len(pairs) > len(set(pairs))  # fixture has parallel branches
+
+        G = build_networkx_graph(graph, branch_data)
+        assert G.number_of_edges() == len(pairs)
+
+    def test_nan_attributes_dropped(self, cross_graph):
+        graph, branch_data = cross_graph
+        branch_data = branch_data.copy()
+        branch_data["tortuosity"] = np.nan
+        branch_data["straightness"] = np.inf
+        G = build_networkx_graph(graph, branch_data)
+
+        for _, _, data in G.edges(data=True):
+            assert "tortuosity" not in data
+            assert "straightness" not in data
+
+    def test_summary_features_attached_and_nan_dropped(self, cross_graph):
+        graph, branch_data = cross_graph
+        G = build_networkx_graph(
+            graph,
+            branch_data,
+            summary_features={"num_nodes": 5.0, "mean_tortuosity": np.nan},
+        )
+        assert G.graph["num_nodes"] == 5.0
+        assert "mean_tortuosity" not in G.graph
+
+    def test_3d_skeleton(self, cross_volume_graph):
+        graph, branch_data = cross_volume_graph
+        G = build_networkx_graph(graph, branch_data)
+
+        assert G.number_of_nodes() == _junction_endpoint_count(graph)
+        _, data = next(iter(G.nodes(data=True)))
+        assert "coord_2" in data
+
+
+class TestWriteGraphml:
+    def test_write_and_read_round_trip(self, tmp_path, cross_graph, cross_skel):
+        graph, branch_data = cross_graph
+        radius_matrix = np.full(cross_skel.shape, 3.0, dtype=np.float64)
+        path = tmp_path / "img_graph.graphml"
+        write_graphml(
+            graph,
+            branch_data,
+            path,
+            summary_features={"total_length": 42.0},
+            radius_matrix=radius_matrix,
+        )
+
+        G = nx.read_graphml(str(path), node_type=int)
+        assert G.number_of_nodes() == _junction_endpoint_count(graph)
+        assert G.number_of_edges() == len(branch_data)
+        assert G.graph["total_length"] == 42.0
+
+        node_id, data = next(iter(G.nodes(data=True)))
+        assert data["coord_0"] == int(graph.coordinates[node_id, 0])
+        assert data["radius"] == 3.0
+        assert "degree" in data
+        assert "branch-distance" in next(iter(G.edges(data=True)))[2]
+
+    def test_parallel_edges_round_trip_as_multigraph(self, tmp_path, loop_graph):
+        graph, branch_data = loop_graph
+        path = tmp_path / "loop_graph.graphml"
+        write_graphml(graph, branch_data, path)
+
+        G = nx.read_graphml(str(path), node_type=int)
+        assert isinstance(G, nx.MultiGraph)
+        assert G.number_of_edges() == len(branch_data)
+
+    def test_empty_branch_data(self, tmp_path, cross_graph):
+        graph, branch_data = cross_graph
+        path = tmp_path / "empty_graph.graphml"
+        write_graphml(graph, branch_data.iloc[0:0], path)
+        G = nx.read_graphml(str(path), node_type=int)
+        assert G.number_of_nodes() == 0
+        assert G.number_of_edges() == 0

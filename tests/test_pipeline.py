@@ -4,6 +4,8 @@ import pytest
 from vesskel.config import ExtractionConfig, OutputConfig, PipelineConfig
 from vesskel.pipeline import AnalysisResult, analyze_binary_image
 
+from ._helpers import cross_volume, line_volume
+
 
 class TestAnalysisResult:
     def test_default_radius_matrix_is_none(self):
@@ -48,13 +50,6 @@ class TestAnalysisResult:
 
 class TestAnalyzeBinaryImage:
     @pytest.fixture
-    def cross_image(self):
-        img = np.zeros((32, 32), dtype=np.uint8)
-        img[16, 8:24] = 1
-        img[8:24, 16] = 1
-        return img
-
-    @pytest.fixture
     def analysis_config(self):
         """Shared config with branches and summary enabled."""
         return PipelineConfig(
@@ -70,12 +65,20 @@ class TestAnalyzeBinaryImage:
         assert result.summary_features == {}
         assert result.branch_records == []
         assert result.radius_matrix is None
+        assert result.graph is None
+        assert result.branch_data is None
 
-    def test_cross_produces_skeleton(self, cross_image, analysis_config):
-        result = analyze_binary_image(cross_image, "cross", analysis_config)
+    def test_result_carries_graph_and_branch_data(self, cross_skel, analysis_config):
+        result = analyze_binary_image(cross_skel, "cross", analysis_config)
+        assert result.graph is not None
+        assert result.branch_data is not None
+        assert not result.branch_data.empty
+
+    def test_cross_produces_skeleton(self, cross_skel, analysis_config):
+        result = analyze_binary_image(cross_skel, "cross", analysis_config)
         assert result.skeleton.any()
         assert result.skeleton.dtype == np.uint8
-        assert result.skeleton.shape == cross_image.shape
+        assert result.skeleton.shape == cross_skel.shape
 
     def test_non_binary_input_is_binarized(self, analysis_config):
         img = np.zeros((20, 20), dtype=np.int32)
@@ -84,48 +87,48 @@ class TestAnalyzeBinaryImage:
         assert result.skeleton.any()
         assert set(np.unique(result.skeleton)) <= {0, 1}
 
-    def test_summary_disabled_returns_empty_features(self, cross_image):
+    def test_summary_disabled_returns_empty_features(self, cross_skel):
         config = PipelineConfig(
             extraction=ExtractionConfig(summary=False),
             output=OutputConfig(),
         )
-        result = analyze_binary_image(cross_image, "cross", config)
+        result = analyze_binary_image(cross_skel, "cross", config)
         assert result.summary_features == {}
 
-    def test_branches_enabled(self, cross_image, analysis_config):
-        result = analyze_binary_image(cross_image, "cross", analysis_config)
+    def test_branches_enabled(self, cross_skel, analysis_config):
+        result = analyze_binary_image(cross_skel, "cross", analysis_config)
         assert len(result.branch_records) > 0
         assert isinstance(result.branch_records[0], dict)
 
-    def test_branches_disabled_returns_empty_records(self, cross_image):
+    def test_branches_disabled_returns_empty_records(self, cross_skel):
         config = PipelineConfig(
             extraction=ExtractionConfig(branches=False),
             output=OutputConfig(),
         )
-        result = analyze_binary_image(cross_image, "cross", config)
+        result = analyze_binary_image(cross_skel, "cross", config)
         assert result.branch_records == []
 
-    def test_vessel_radius_enabled(self, cross_image):
+    def test_vessel_radius_enabled(self, cross_skel):
         config = PipelineConfig(
             extraction=ExtractionConfig(vessel_radius=True, summary=True),
             output=OutputConfig(),
         )
-        result = analyze_binary_image(cross_image, "cross", config)
+        result = analyze_binary_image(cross_skel, "cross", config)
         assert result.radius_matrix is not None
-        assert result.radius_matrix.shape == cross_image.shape
+        assert result.radius_matrix.shape == cross_skel.shape
         assert result.radius_matrix.any()
         assert result.summary_features["mean_radius"] > 0
 
-    def test_vessel_radius_disabled_radius_none(self, cross_image, analysis_config):
-        result = analyze_binary_image(cross_image, "cross", analysis_config)
+    def test_vessel_radius_disabled_radius_none(self, cross_skel, analysis_config):
+        result = analyze_binary_image(cross_skel, "cross", analysis_config)
         assert result.radius_matrix is None
 
-    def test_radius_stats_in_summary_when_enabled(self, cross_image):
+    def test_radius_stats_in_summary_when_enabled(self, cross_skel):
         config = PipelineConfig(
             extraction=ExtractionConfig(vessel_radius=True, summary=True),
             output=OutputConfig(),
         )
-        result = analyze_binary_image(cross_image, "cross", config)
+        result = analyze_binary_image(cross_skel, "cross", config)
         radius_keys = [
             "mean_radius",
             "std_radius",
@@ -140,19 +143,19 @@ class TestAnalyzeBinaryImage:
             assert key in result.summary_features
             assert result.summary_features[key] > 0
 
-    def test_fractal_dimension_disabled_by_default(self, cross_image, analysis_config):
-        result = analyze_binary_image(cross_image, "cross", analysis_config)
+    def test_fractal_dimension_disabled_by_default(self, cross_skel, analysis_config):
+        result = analyze_binary_image(cross_skel, "cross", analysis_config)
         assert result.summary_features["fractal_dimension"] == 0.0
 
-    def test_fractal_dimension_enabled(self, cross_image):
+    def test_fractal_dimension_enabled(self, cross_skel):
         config = PipelineConfig(
             extraction=ExtractionConfig(fractal_dimension=True, summary=True),
             output=OutputConfig(),
         )
-        result = analyze_binary_image(cross_image, "cross", config)
+        result = analyze_binary_image(cross_skel, "cross", config)
         assert result.summary_features["fractal_dimension"] > 0
 
-    def test_all_options_enabled(self, cross_image):
+    def test_all_options_enabled(self, cross_skel):
         config = PipelineConfig(
             extraction=ExtractionConfig(
                 branches=True,
@@ -163,7 +166,7 @@ class TestAnalyzeBinaryImage:
             ),
             output=OutputConfig(),
         )
-        result = analyze_binary_image(cross_image, "full", config)
+        result = analyze_binary_image(cross_skel, "full", config)
         assert result.skeleton.any()
         assert len(result.layers) > 0
         assert len(result.summary_features) > 0
@@ -172,7 +175,7 @@ class TestAnalyzeBinaryImage:
         assert result.summary_features["fractal_dimension"] > 0
         assert result.summary_features["mean_radius"] > 0
 
-    def test_all_options_disabled(self, cross_image):
+    def test_all_options_disabled(self, cross_skel):
         config = PipelineConfig(
             extraction=ExtractionConfig(
                 branches=False,
@@ -183,16 +186,14 @@ class TestAnalyzeBinaryImage:
             ),
             output=OutputConfig(),
         )
-        result = analyze_binary_image(cross_image, "bare", config)
+        result = analyze_binary_image(cross_skel, "bare", config)
         assert result.skeleton.any()
         assert result.radius_matrix is None
         assert result.summary_features == {}
         assert result.branch_records == []
 
     def test_3d_image(self):
-        vol = np.zeros((16, 16, 16), dtype=np.uint8)
-        vol[8, 8, :] = 1
-        vol[8, :, 8] = 1
+        vol = cross_volume()
         config = PipelineConfig(
             extraction=ExtractionConfig(summary=True), output=OutputConfig()
         )
@@ -201,8 +202,7 @@ class TestAnalyzeBinaryImage:
         assert len(result.summary_features) > 0
 
     def test_3d_image_with_radius(self):
-        vol = np.zeros((12, 12, 12), dtype=np.uint8)
-        vol[6, 6, :] = 1
+        vol = line_volume((12, 12, 12), axis=2)
         config = PipelineConfig(
             extraction=ExtractionConfig(
                 vessel_radius=True, fractal_dimension=True, summary=True
@@ -214,10 +214,10 @@ class TestAnalyzeBinaryImage:
         assert result.radius_matrix.shape == vol.shape
         assert result.summary_features["mean_radius"] > 0
 
-    def test_cross_topology_num_endpoints(self, cross_image, analysis_config):
-        result = analyze_binary_image(cross_image, "cross", analysis_config)
+    def test_cross_topology_num_endpoints(self, cross_skel, analysis_config):
+        result = analyze_binary_image(cross_skel, "cross", analysis_config)
         assert result.summary_features["num_endpoints"] == 4
 
-    def test_cross_topology_num_bifurcations(self, cross_image, analysis_config):
-        result = analyze_binary_image(cross_image, "cross", analysis_config)
+    def test_cross_topology_num_bifurcations(self, cross_skel, analysis_config):
+        result = analyze_binary_image(cross_skel, "cross", analysis_config)
         assert result.summary_features["num_bifurcations"] == 1
