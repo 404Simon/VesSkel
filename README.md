@@ -7,6 +7,12 @@
 
 Vessel Skeletonization and Graph-Based Phenotype Analysis in Retinal Fundus Images
 
+## Demo
+
+<video src="https://github.com/user-attachments/assets/8c0febe4-5428-451e-847b-e9210ec0f06b" controls width="1920"></video>
+
+A quick look at what VesSkel can do: initialize a config file with the CLI, load it in the napari plugin to analyze a single example image, then batch-process the whole HRF dataset with the CLI. In practice you'd tweak the extraction settings in napari and save the config back out before batch-processing.
+
 ## Installation
 
 ```sh
@@ -152,7 +158,7 @@ For more information, visit the [HRF Image Database](https://www5.cs.fau.de/rese
 
 If you use VesSkel in your research, please cite the Zenodo release:
 
-> Wittmann, S. (2026). 404Simon/VesSkel: 5.1.0 (Version 5.1.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21550587
+> Wittmann, S. (2026). 404Simon/VesSkel: 5.1.0 (Version 5.1.0) [Computer software]. Zenodo. <https://doi.org/10.5281/zenodo.21550587>
 
 ## License
 
